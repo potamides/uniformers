@@ -22,7 +22,7 @@ output_dir = join(getenv("UNIFORMERS_DATA", ""), f"models/bygpt5-{size}")
 base_model = f"google/byt5-{size}"
 
 
-def train(from_scratch=False):
+def train(from_scratch=False, gradient_accumulation_steps=8, gradient_checkpointing=False):
     directory = f"{output_dir}-scratch" if from_scratch else output_dir
     logger.info(
         f"Training {basename(base_model)}-style model from {'scratch' if from_scratch else 'checkpoint'}."
@@ -37,8 +37,17 @@ def train(from_scratch=False):
             model = ByGPT5LMHeadModel(config)
         else:
             model = ByGPT5LMHeadModel.from_pretrained(base_model)
+        model.config.use_cache = not gradient_checkpointing # T5 doesn't support both at the same time
         tokenizer = ByGPT5Tokenizer.from_pretrained(base_model)
-        trainer = LMTrainer(model, tokenizer, directory, test_run=True, transfer=True) # TODO: remove test_run
+        trainer = LMTrainer(
+            model,
+            tokenizer,
+            directory,
+            gradient_accumulation_steps=gradient_accumulation_steps,
+            gradient_checkpointing=gradient_checkpointing,
+            test_run=True,  # TODO: remove test_run later
+            transfer=True,
+        )
         trainer.train()
         trainer.save_model()
         trainer.save_state()
