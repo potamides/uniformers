@@ -6,7 +6,6 @@ from textwrap import shorten
 
 from datasets.load import load_dataset
 from datasets.fingerprint import update_fingerprint
-from torch.cuda import is_available as has_cuda
 from transformers.data.data_collator import DataCollatorForLanguageModeling
 from transformers.trainer import Trainer
 from transformers.trainer_utils import get_last_checkpoint
@@ -63,8 +62,10 @@ class LMTrainer(Trainer):
         tokenizer,
         output_dir,
         sequence_length=1024,
-        fp16=has_cuda(),
-        tf32=has_cuda(),
+        # https://github.com/huggingface/transformers/issues/14608#issuecomment-1004390803
+        fp16=False,
+        bf16=True,
+        tf32=False,
         test_run=False,
         transfer=False,
         overwrite_output_dir=False,
@@ -130,6 +131,7 @@ class LMTrainer(Trainer):
             global_train_batch_size=512,
             global_eval_batch_size=512,
             fp16=fp16,
+            bf16=bf16,
             tf32=tf32,
             save_total_limit=2,
             overwrite_output_dir=overwrite_output_dir,
