@@ -23,21 +23,22 @@ base_model = f"google/byt5-{size}"
 
 
 def train(from_scratch=False):
+    directory = f"{output_dir}-scratch" if from_scratch else output_dir
     logger.info(
         f"Training {basename(base_model)}-style model from {'scratch' if from_scratch else 'checkpoint'}."
     )
     try:
         model, tokenizer = ByGPT5LMHeadModel.from_pretrained(
-            output_dir
-        ), ByGPT5Tokenizer.from_pretrained(output_dir)
+            directory
+        ), ByGPT5Tokenizer.from_pretrained(directory)
     except EnvironmentError:
         if from_scratch:
             config = ByGPT5Config.from_pretrained(base_model)
             model = ByGPT5LMHeadModel(config)
         else:
             model = ByGPT5LMHeadModel.from_pretrained(base_model)
-        tokenizer = ByGPT5Tokenizer()
-        trainer = LMTrainer(model, tokenizer, output_dir, test_run=True, transfer=True) # TODO: remove test_run
+        tokenizer = ByGPT5Tokenizer.from_pretrained(base_model)
+        trainer = LMTrainer(model, tokenizer, directory, test_run=True, transfer=True) # TODO: remove test_run
         trainer.train()
         trainer.save_model()
         trainer.save_state()
