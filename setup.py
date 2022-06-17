@@ -2,7 +2,6 @@ from setuptools import setup, find_packages
 
 setup(
     name="uniformers",
-    version="1.0",
     description="Universal Coded Character Set Transformers for Language Modelling",
     keywords=[
         "Deep Learning",
