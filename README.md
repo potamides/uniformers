@@ -13,3 +13,12 @@ repository and install it in editable mode:
 git clone https://github.com/potamides/uniformers
 pip install -e uniformers[experiments]
  ```
+
+## Pretrained Model Weights
+| ByGPT5 | Parameters | Status |
+|:-------|:-----------|:-------|
+| Tiny   | 73.5M      | WIP    |
+| Small  | 139.2M     | TODO   |
+| Base   | 289.1M     | TODO   |
+| Large  | 873.0M     | TBD    |
+| XL     | 3.0B       | TBD    |
