@@ -10,6 +10,6 @@ pip install 'git+https://github.com/potamides/uniformers.git#egg=uniformers'
 If your goal is to run the included [experiments](experiments) clone the
 repository and install it in editable mode:
  ```sh
- git clone https://github.com/potamides/uniformers
- pip install -e uniformers[experiments]
+git clone https://github.com/potamides/uniformers
+pip install -e uniformers[experiments]
  ```
