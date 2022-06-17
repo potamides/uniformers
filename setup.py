@@ -27,6 +27,6 @@ setup(
     extras_require={
         "experiments": [],
     },
-    python_requires="~=3.10.5",
+    python_requires="~=3.10.4",
     zip_safe=False,
 )
