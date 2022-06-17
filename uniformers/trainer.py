@@ -1,5 +1,6 @@
 from functools import cached_property
 from itertools import chain
+from os.path import isdir, isfile, join
 from random import randrange
 from textwrap import shorten
 
@@ -154,12 +155,17 @@ class LMTrainer(Trainer):
         )
 
     def train(self, **kwargs):
-        if not self.args.overwrite_output_dir:
+        if not self.args.overwrite_output_dir and isdir(self.args.output_dir):
             last_checkpoint = get_last_checkpoint(self.args.output_dir)
-            if last_checkpoint:
+
+            if isfile(join(self.args.output_dir, 'config.json')):
+                logger.warning(
+                    f"Output directory ({self.args.output_dir}) exists already and is not empty. Skipping training."
+                )
+            elif last_checkpoint:
                 logger.info(
                     f"Checkpoint detected, resuming training at {last_checkpoint}. To avoid this behavior, change "
-                    "the `--output_dir` or add `--overwrite_output_dir` to train from scratch."
+                    "the `output_dir` or add `overwrite_output_dir` to train from scratch."
                 )
         else:
             last_checkpoint = None
