@@ -120,7 +120,7 @@ class LMTrainer(Trainer):
 
         # interesting resource: https://huggingface.co/course/chapter7/6?fw=pt
         args = LMTrainingArguments(
-            optim="adamw_hf",
+            optim="adamw_torch",
             lr_scheduler_type="cosine",
             learning_rate=LM_LEARNING_RATES[learning_rate],
             num_train_epochs=1,
@@ -135,6 +135,7 @@ class LMTrainer(Trainer):
             overwrite_output_dir=overwrite_output_dir,
             gradient_accumulation_steps=gradient_accumulation_steps,
             gradient_checkpointing=gradient_checkpointing,
+            ddp_find_unused_parameters=False,
             evaluation_strategy="no" if test_run else "steps",
             eval_steps=50000,
             logging_steps=test_run and 20 or 1000,
