@@ -131,4 +131,6 @@ dmypy.json
 # Project specific
 /data/
 /models/
+/experiments/models/
+/experiments/data/
 uniformers/_version.py
