@@ -129,5 +129,6 @@ dmypy.json
 .pyre/
 
 # Project specific
-data/
+/data/
+/models/
 uniformers/_version.py
