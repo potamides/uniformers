@@ -5,17 +5,88 @@ import torch
 from torch import nn
 from torch.nn import CrossEntropyLoss
 from transformers.modeling_outputs import CausalLMOutputWithCrossAttentions
-from transformers.models.t5.modeling_t5 import T5PreTrainedModel, T5Stack
+from transformers.models.t5.modeling_t5 import (
+    T5PreTrainedModel,
+    T5Stack,
+    T5Block,
+    T5LayerSelfAttention,
+    T5LayerFF,
+    T5LayerNorm,
+)
 from transformers.utils.model_parallel_utils import assert_device_map, get_device_map
 from transformers.configuration_utils import PretrainedConfig
 
 from .configuration import ByGPT5Config
 
+# weights which we don't use in our decoder only variant
+_bygpt5_keys_to_ignore_on_load_unexpected = [
+    # r"decoder\.block\.0\.layer\.1\.EncDecAttention\.relative_attention_bias\.weight",
+    r"encoder.*",
+    r"decoder\.block\.\d\.layer\.1\.layer_norm\.weight",
+    r"decoder\.block\.\d\.layer\.1\.EncDecAttention\.[qkov]\.weight",
+]
 
-class ByGPT5Model(T5Stack):
+
+class ByGPT5Block(T5Block):
+    """
+    Custom T5Block which does not instantiate T5LayerCrossAttention (which we
+    don't need) and which throws errors during parallel training.
+    """
+
+    def __init__(self, config, has_relative_attention_bias=False):
+        # call __init__ of grandparent (parent contains the code we don't want)
+        super(T5Block, self).__init__()
+        self.is_decoder = config.is_decoder
+        self.layer = nn.ModuleList()
+        self.layer.append(
+            T5LayerSelfAttention(
+                config, has_relative_attention_bias=has_relative_attention_bias
+            )
+        )
+
+        if self.is_decoder:
+            # add identity instead of cross attention so that weights are
+            # loaded correctly
+            self.layer.append(nn.Identity())
+
+        self.layer.append(T5LayerFF(config))
+
+
+class ByGPT5Stack(T5Stack):
+    """
+    Overwrite T5Stack to use our custom T5Block class.
+    """
+
+    def __init__(self, config, embed_tokens=None):
+        # call __init__ of grandparent (parent contains the code we don't want)
+        super(T5Stack, self).__init__(config)
+
+        self.embed_tokens = embed_tokens
+        self.is_decoder = config.is_decoder
+
+        self.block = nn.ModuleList(
+            [
+                ByGPT5Block(config, has_relative_attention_bias=bool(i == 0))
+                for i in range(config.num_layers)
+            ]
+        )
+        self.final_layer_norm = T5LayerNorm(
+            config.d_model, eps=config.layer_norm_epsilon
+        )
+        self.dropout = nn.Dropout(config.dropout_rate)
+
+        # Initialize weights and apply final processing
+        self.post_init()
+        # Model parallel
+        self.model_parallel = False
+        self.device_map = None
+        self.gradient_checkpointing = False
+
+
+class ByGPT5Model(ByGPT5Stack):
     model_type = "bygpt5"
     config_class = ByGPT5Config
-    _keys_to_ignore_on_load_unexpected = [r"encoder.*"]
+    _keys_to_ignore_on_load_unexpected = _bygpt5_keys_to_ignore_on_load_unexpected
 
     def __init__(self, config: ByGPT5Config):
         config = deepcopy(config)
@@ -32,10 +103,7 @@ class ByGPT5LMHeadModel(T5PreTrainedModel):
         r"decoder\.embed_tokens\.weight",
         r"lm_head\.weight",
     ]
-    _keys_to_ignore_on_load_unexpected = [
-        r"decoder\.block\.0\.layer\.1\.EncDecAttention\.relative_attention_bias\.weight",
-        r"encoder.*",
-    ]
+    _keys_to_ignore_on_load_unexpected = _bygpt5_keys_to_ignore_on_load_unexpected
 
     def __init__(self, config: ByGPT5Config | PretrainedConfig):
         config = deepcopy(config)
@@ -46,7 +114,7 @@ class ByGPT5LMHeadModel(T5PreTrainedModel):
 
         self.model_dim = config.d_model
         self.shared = nn.Embedding(config.vocab_size, config.d_model)
-        self.decoder = T5Stack(deepcopy(config), self.shared)
+        self.decoder = ByGPT5Stack(deepcopy(config), self.shared)
         self.lm_head = nn.Linear(config.d_model, config.vocab_size, bias=False)
 
         # Initialize weights and apply final processing
