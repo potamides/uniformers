@@ -68,6 +68,7 @@ class LMTrainer(Trainer):
         fp16=has_cuda(),
         tf32=has_cuda(),
         test_run=False,
+        transfer=False,
         overwrite_output_dir=False,
         # only change below stuff when model doesn't fit into memory (see
         # https://huggingface.co/docs/transformers/performance)
@@ -125,7 +126,7 @@ class LMTrainer(Trainer):
             lr_scheduler_type="cosine",
             learning_rate=LM_LEARNING_RATES[learning_rate],
             num_train_epochs=1,
-            max_steps=1000 if test_run else 600_000,
+            max_steps=1000 if test_run else (100_000 if transfer else 600_000),
             weight_decay=0.1,
             warmup_ratio=0.01,
             global_train_batch_size=512,
