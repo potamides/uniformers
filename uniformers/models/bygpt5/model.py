@@ -7,6 +7,7 @@ from torch.nn import CrossEntropyLoss
 from transformers.modeling_outputs import CausalLMOutputWithCrossAttentions
 from transformers.models.t5.modeling_t5 import T5PreTrainedModel, T5Stack
 from transformers.utils.model_parallel_utils import assert_device_map, get_device_map
+from transformers.configuration_utils import PretrainedConfig
 
 from .configuration import ByGPT5Config
 
@@ -14,9 +15,7 @@ from .configuration import ByGPT5Config
 class ByGPT5Model(T5Stack):
     model_type = "bygpt5"
     config_class = ByGPT5Config
-    _keys_to_ignore_on_load_unexpected = [
-        r"encoder.*"
-    ]
+    _keys_to_ignore_on_load_unexpected = [r"encoder.*"]
 
     def __init__(self, config: ByGPT5Config):
         config = deepcopy(config)
@@ -35,10 +34,10 @@ class ByGPT5LMHeadModel(T5PreTrainedModel):
     ]
     _keys_to_ignore_on_load_unexpected = [
         r"decoder\.block\.0\.layer\.1\.EncDecAttention\.relative_attention_bias\.weight",
-        r"encoder.*"
+        r"encoder.*",
     ]
 
-    def __init__(self, config: ByGPT5Config):
+    def __init__(self, config: ByGPT5Config | PretrainedConfig):
         config = deepcopy(config)
         config.is_decoder = True
         config.is_encoder_decoder = False
