@@ -22,6 +22,7 @@ setup(
         "numpy~=1.22.4",
         "tokenizers~=0.12.1",
         "torch~=1.11.0",
+        "zstandard~=0.17.0",
         "transformers==4.20.0",
     ],
     extras_require={
