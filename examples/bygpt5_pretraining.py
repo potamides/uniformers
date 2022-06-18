@@ -37,7 +37,8 @@ def train(from_scratch=False, gradient_accumulation_steps=8, gradient_checkpoint
             model = ByGPT5LMHeadModel(config)
         else:
             model = ByGPT5LMHeadModel.from_pretrained(base_model)
-        model.config.use_cache = not gradient_checkpointing # T5 doesn't support both at the same time
+        # T5 doesn't support both cache and grad checkpointing at the same time
+        model.config.use_cache = not gradient_checkpointing # pyright: ignore
         tokenizer = ByGPT5Tokenizer.from_pretrained(base_model)
         trainer = LMTrainer(
             model,
@@ -45,7 +46,7 @@ def train(from_scratch=False, gradient_accumulation_steps=8, gradient_checkpoint
             directory,
             gradient_accumulation_steps=gradient_accumulation_steps,
             gradient_checkpointing=gradient_checkpointing,
-            test_run=True,  # TODO: remove test_run later
+            #test_run=True,
             transfer=True,
         )
         trainer.train()
