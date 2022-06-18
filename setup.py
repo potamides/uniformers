@@ -25,7 +25,7 @@ setup(
         "transformers==4.20.0",
     ],
     extras_require={
-        "experiments": [],
+        "examples": [],
     },
     python_requires="~=3.10.4",
     zip_safe=False,

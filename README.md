@@ -7,11 +7,11 @@ package using [pip](https://pip.pypa.io/en/stable):
 ```sh
 pip install 'git+https://github.com/potamides/uniformers.git#egg=uniformers'
 ```
-If your goal is to run the included [experiments](experiments) clone the
+If your goal is to run the included [examples](examples) clone the
 repository and install it in editable mode:
  ```sh
 git clone https://github.com/potamides/uniformers
-pip install -e uniformers[experiments]
+pip install -e uniformers[examples]
  ```
 
 ## Pretrained Model Weights
