@@ -10,12 +10,14 @@ from transformers.utils.logging import (
 
 from uniformers.models.bygpt5 import ByGPT5Config, ByGPT5LMHeadModel, ByGPT5Tokenizer
 from uniformers.trainer import LMTrainer
+from transformers.trainer_utils import set_seed
 
 from os.path import basename
 
 set_verbosity_info()
 enable_explicit_format()
 logger = get_logger("transformers")
+set_seed(0)
 
 size = getenv("UNIFORMERS_MODEL_SIZE", "small")
 output_dir = join(getenv("UNIFORMERS_DATA", ""), f"models/bygpt5-{size}")
