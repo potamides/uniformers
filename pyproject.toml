@@ -1,5 +1,38 @@
 [build-system]
-requires = ["setuptools>=45", "setuptools_scm[toml]>=6.2"]
+requires = ["setuptools>=61", "setuptools_scm[toml]>=6.2"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "uniformers"
+description = "Universal Coded Character Set Transformers for Language Modelling"
+readme = "README.md"
+keywords = [
+  "Deep Learning",
+  "Language Models",
+  "Transformers",
+  "Character-Level",
+  "Tokenization-Free",
+  "Natural Language Processing",
+  "Natural Language Generation",
+  "Poetry Generation",
+]
+license = {text = "Apache-2.0 License"}
+dependencies = [
+  "datasets~=2.3.2",
+  "numpy~=1.22.4",
+  "tokenizers~=0.12.1",
+  "torch~=1.11.0",
+  "zstandard~=0.17.0",
+  "transformers==4.20.0",
+]
+requires-python = "~=3.10.4"
+dynamic = ["version"]
+
+[project.urls]
+repository = "https://github.com/potamides/uniformers"
+
+[project.optional-dependencies]
+examples = []
 
 [tool.setuptools_scm]
 write_to = "uniformers/_version.py"
