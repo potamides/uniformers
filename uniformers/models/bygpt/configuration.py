@@ -3,6 +3,7 @@ from inspect import signature
 
 
 class ByGPTConfig(GPT2Config):
+    model_type = "bygpt"
     def __init__(
         self,
         bos_token_id=0,
