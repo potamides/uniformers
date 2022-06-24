@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 from os import makedirs
-from os.path import join, basename
+from os.path import join
 from json import dump
 from argparse import ArgumentParser
 
@@ -52,12 +52,12 @@ if __name__ == "__main__":
     ]
 
     perplexities = {
-        "WikiText103": perplexity(wikitext103),
-        "LAMBADA": perplexity(lambada),
+        "WikiText103": perplexity(wikitext103)['mean_perplexity'], # pyright: ignore
+        "LAMBADA": perplexity(lambada)['mean_perplexity'], # pyright: ignore
     }
 
     with open(
-        join(args.out_dir, f"perplexity-{basename(args.model_name_or_path)}.json"), "w"
+        join(args.out_dir, f"perplexity-{args.model_name_or_path.replace('/', '-')}.json"), "w"
     ) as fp:
         dump(perplexities, fp)  # pyright: ignore
         print(perplexities)

@@ -96,6 +96,3 @@ if __name__ == "__main__":
     )
 
     train(base_model, output_dir)
-    if args.model_size == "small":
-        # contrast reusing weights with training from scratch
-        train(base_model, output_dir, from_scratch=True)
