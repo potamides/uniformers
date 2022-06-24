@@ -1,4 +1,4 @@
-#!/usr/bin/env -S python -m torch.distributed.launch --nproc_per_node gpu
+#!/usr/bin/env -S torchrun --nproc_per_node gpu
 from argparse import ArgumentParser
 from os.path import join
 from os.path import basename
