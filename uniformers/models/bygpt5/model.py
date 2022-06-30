@@ -22,8 +22,8 @@ from .configuration import ByGPT5Config
 _bygpt5_keys_to_ignore_on_load_unexpected = [
     # r"decoder\.block\.0\.layer\.1\.EncDecAttention\.relative_attention_bias\.weight",
     r"encoder.*",
-    r"decoder\.block\.\d\.layer\.1\.layer_norm\.weight",
-    r"decoder\.block\.\d\.layer\.1\.EncDecAttention\.[qkov]\.weight",
+    r"decoder\.block\.\d+\.layer\.1\.layer_norm\.weight",
+    r"decoder\.block\.\d+\.layer\.1\.EncDecAttention\.[qkov]\.weight",
 ]
 
 
