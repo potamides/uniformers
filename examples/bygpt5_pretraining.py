@@ -22,6 +22,7 @@ set_seed(0)
 def train(
     base_model,
     output_dir,
+    lang="en",
     from_scratch=False,
     gradient_accumulation_steps=8,
     gradient_checkpointing=False,
@@ -47,6 +48,7 @@ def train(
             model,
             tokenizer,
             directory,
+            lang=lang,
             gradient_accumulation_steps=gradient_accumulation_steps,
             gradient_checkpointing=gradient_checkpointing,
             # test_run=True,
@@ -89,10 +91,16 @@ if __name__ == "__main__":
         default="models",
         help="directory where to write the model files",
     )
+    argument_parser.add_argument(
+        "--lang",
+        choices=["en", "de"],
+        default="en",
+        help="specify which language to train on",
+    )
     args = argument_parser.parse_args()
     base_model = f"google/byt5-{args.model_size}"
     output_dir = join(
-        args.out_dir, f"bygpt5-{byt5_size_to_bygpt5_size(args.model_size)}"
+        args.out_dir, f"bygpt5-{byt5_size_to_bygpt5_size(args.model_size)}", args.lang
     )
 
-    train(base_model, output_dir)
+    train(base_model, output_dir, lang=args.lang)

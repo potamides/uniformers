@@ -71,6 +71,7 @@ class LMTrainer(Trainer):
         model,
         tokenizer,
         output_dir,
+        lang="en",
         sequence_length=1024,
         # https://github.com/huggingface/transformers/issues/14608#issuecomment-1004390803
         fp16=False,
@@ -130,9 +131,22 @@ class LMTrainer(Trainer):
             output_dir=output_dir,
         )
 
-        split_dataset = self.load_dataset(
-            "stas/openwebtext-10k" if test_run else "the_pile_openwebtext2"
-        )
+        if test_run:
+            split_dataset = self.load_dataset("stas/openwebtext-10k")
+        elif lang == "de":
+            split_dataset = self.load_dataset("cc100", lang=lang)
+        else:
+            split_dataset = self.load_dataset(
+                "the_pile_openwebtext2",
+                # column types need special care for this dataset
+                features=Features(
+                    {
+                        "title": Value("string"),
+                        "text": Value("string"),
+                        "reddit_scores": Sequence(Value("int32")),
+                    }
+                ),
+            )
 
         super().__init__(
             model=self.model,
@@ -144,25 +158,14 @@ class LMTrainer(Trainer):
             **kwargs,
         )
 
-    def load_dataset(self, dataset_name):
-        features = (
-            Features(
-                {
-                    "title": Value("string"),
-                    "text": Value("string"),
-                    "reddit_scores": Sequence(Value("int32")),
-                }
-            )
-            if dataset_name == "the_pile_openwebtext2"  # column types need special care for this dataset
-            else None
-        )
+    def load_dataset(self, dataset_name, **kwargs):
         # the minimum amount of samples we need for training
         self.min_num_samples = (
             self.args.max_steps * self.args.global_train_batch_size
             + self.args.eval_samples
         )
         self._num_samples = 0
-        raw_dataset = load_dataset(dataset_name, split="train", features=features)
+        raw_dataset = load_dataset(dataset_name, split="train", **kwargs)
         # internal hash computation is not the same across sessions so we have
         # to compute it ourselves
         new_fingerprint = update_fingerprint(
