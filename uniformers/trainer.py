@@ -6,12 +6,13 @@ from textwrap import shorten
 
 from datasets import Features, Sequence, Value
 from datasets.fingerprint import update_fingerprint
-from datasets.load import load_dataset
 from transformers.data.data_collator import DataCollatorForLanguageModeling
 from transformers.trainer import Trainer
 from transformers.trainer_utils import get_last_checkpoint
 from transformers.training_args import TrainingArguments
 from transformers.utils import logging
+
+from uniformers.datasets import load_dataset
 
 logger = logging.get_logger("transformers")
 
@@ -133,8 +134,8 @@ class LMTrainer(Trainer):
 
         if test_run:
             split_dataset = self.load_dataset("stas/openwebtext-10k")
-        elif lang == "de":
-            split_dataset = self.load_dataset("cc100", lang=lang)
+        elif lang != "en":
+            split_dataset = self.load_dataset("docc100", lang=lang)
         else:
             split_dataset = self.load_dataset(
                 "the_pile_openwebtext2",
