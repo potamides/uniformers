@@ -27,14 +27,13 @@ def train(
     gradient_accumulation_steps=8,
     gradient_checkpointing=False,
 ):
-    directory = f"{output_dir}-scratch" if from_scratch else output_dir
     logger.info(
         f"Training {basename(base_model)}-style model from {'scratch' if from_scratch else 'checkpoint'}."
     )
     try:
         model, tokenizer = ByGPT5LMHeadModel.from_pretrained(
-            directory
-        ), ByGPT5Tokenizer.from_pretrained(directory)
+            output_dir
+        ), ByGPT5Tokenizer.from_pretrained(output_dir)
     except EnvironmentError:
         if from_scratch:
             config = ByGPT5Config.from_pretrained(base_model)
@@ -47,7 +46,7 @@ def train(
         trainer = LMTrainer(
             model,
             tokenizer,
-            directory,
+            output_dir,
             lang=lang,
             gradient_accumulation_steps=gradient_accumulation_steps,
             gradient_checkpointing=gradient_checkpointing,
