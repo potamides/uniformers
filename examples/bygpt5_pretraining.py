@@ -96,6 +96,12 @@ if __name__ == "__main__":
         default="en",
         help="specify which language to train on",
     )
+    argument_parser.add_argument(
+        "--grad_acc_steps",
+        default=8,
+        type=int,
+        help="number of gradient accumulation steps",
+    )
     args = argument_parser.parse_args()
     base_model = f"google/byt5-{args.model_size}"
     output_dir = join(
