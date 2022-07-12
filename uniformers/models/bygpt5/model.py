@@ -4,20 +4,22 @@ from typing import Optional, Tuple, Union
 import torch
 from torch import nn
 from torch.nn import CrossEntropyLoss
+from transformers.configuration_utils import PretrainedConfig
 from transformers.modeling_outputs import CausalLMOutputWithCrossAttentions
 from transformers.models.t5.modeling_t5 import (
-    T5PreTrainedModel,
-    T5Stack,
     T5Block,
-    T5LayerSelfAttention,
     T5LayerFF,
     T5LayerNorm,
+    T5LayerSelfAttention,
+    T5PreTrainedModel,
+    T5Stack,
 )
+from transformers.utils.logging import get_logger
 from transformers.utils.model_parallel_utils import assert_device_map, get_device_map
-from transformers.configuration_utils import PretrainedConfig
 
 from .configuration import ByGPT5Config
 
+logger = get_logger("transformers")
 # weights which we don't use in our decoder only variant
 _bygpt5_keys_to_ignore_on_load_unexpected = [
     # r"decoder\.block\.0\.layer\.1\.EncDecAttention\.relative_attention_bias\.weight",
@@ -184,9 +186,9 @@ class ByGPT5LMHeadModel(T5PreTrainedModel):
         if self.model_parallel:
             torch.cuda.set_device(self.decoder.first_device)
             if input_ids is not None:
-                input_ids = input_ids.to(self.decoder.first_device)
+                input_ids = input_ids.to(self.decoder.first_device) # pyright: ignore
             if attention_mask is not None:
-                attention_mask = attention_mask.to(self.decoder.first_device)
+                attention_mask = attention_mask.to(self.decoder.first_device) # pyright: ignore
 
         # Decode
         decoder_outputs = self.decoder(
@@ -239,3 +241,27 @@ class ByGPT5LMHeadModel(T5PreTrainedModel):
             attentions=decoder_outputs.attentions,
             cross_attentions=decoder_outputs.cross_attentions,
         )
+
+    def _reorder_cache(self, past, beam_idx):
+        # if decoder past is not included in output
+        # speedy decoding is disabled and no need to reorder
+        if past is None:
+            logger.warning("You might want to consider setting `use_cache=True` to speed up decoding")
+            return past
+
+        reordered_decoder_past = ()
+        for layer_past_states in past:
+            # get the correct batch idx from layer past batch dim
+            # batch dim of `past` is at 2nd position
+            reordered_layer_past_states = ()
+            for layer_past_state in layer_past_states:
+                # need to set correct `past` for each of the four key / value states
+                reordered_layer_past_states = reordered_layer_past_states + (
+                    layer_past_state.index_select(0, beam_idx.to(layer_past_state.device)),
+                )
+
+            assert reordered_layer_past_states[0].shape == layer_past_states[0].shape # pyright: ignore
+            assert len(reordered_layer_past_states) == len(layer_past_states)
+
+            reordered_decoder_past = reordered_decoder_past + (reordered_layer_past_states,)
+        return reordered_decoder_past
