@@ -27,7 +27,15 @@ def generate(model_name, prompt, device, min_length=512, max_length=1024):
         device=device,
     )
     return pipeline(
-        prompt, min_length=min_length, max_length=max_length, do_sample=True
+        prompt,
+        min_length=min_length,
+        max_length=max_length,
+        do_sample=True,
+        #num_beams=5,
+        # same default settings as textsynth.com
+        top_k=40,
+        temperature=1,
+        top_p=0.9,
     )[0]["generated_text"]
 
 
