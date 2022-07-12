@@ -59,5 +59,5 @@ if __name__ == "__main__":
     with open(
         join(args.out_dir, f"perplexity-{args.model_name_or_path.replace('/', '-')}.json"), "w"
     ) as fp:
-        dump(perplexities, fp)  # pyright: ignore
+        dump(perplexities, fp)
         print(perplexities)
