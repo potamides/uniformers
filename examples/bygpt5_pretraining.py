@@ -8,10 +8,11 @@ from transformers.utils.logging import (
     enable_explicit_format,
     get_logger,
     set_verbosity_info,
+    set_verbosity_debug,
 )
 
 from uniformers.models.bygpt5 import ByGPT5Config, ByGPT5LMHeadModel, ByGPT5Tokenizer
-from uniformers.trainer import LMTrainer
+from uniformers.trainers import LMTrainer
 
 set_verbosity_info()
 enable_explicit_format()
@@ -26,6 +27,7 @@ def train(
     from_scratch=False,
     gradient_accumulation_steps=8,
     gradient_checkpointing=False,
+    test_run=False,
 ):
     logger.info(
         f"Training {basename(base_model)}-style model from {'scratch' if from_scratch else 'checkpoint'}."
@@ -34,6 +36,7 @@ def train(
         model, tokenizer = ByGPT5LMHeadModel.from_pretrained(
             output_dir
         ), ByGPT5Tokenizer.from_pretrained(output_dir)
+        logger.info(f"Model already trained. Skipping.")
     except EnvironmentError:
         if from_scratch:
             config = ByGPT5Config.from_pretrained(base_model)
@@ -50,7 +53,7 @@ def train(
             lang=lang,
             gradient_accumulation_steps=gradient_accumulation_steps,
             gradient_checkpointing=gradient_checkpointing,
-            # test_run=True,
+            test_run=test_run,
             transfer=True,
         )
         trainer.train()
@@ -102,10 +105,25 @@ if __name__ == "__main__":
         type=int,
         help="number of gradient accumulation steps",
     )
+    argument_parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="perform a test run on debug verbosity",
+    )
     args = argument_parser.parse_args()
+
+    if args.debug:
+        set_verbosity_debug()
+
     base_model = f"google/byt5-{args.model_size}"
     output_dir = join(
         args.out_dir, f"bygpt5-{byt5_size_to_bygpt5_size(args.model_size)}", args.lang
     )
 
-    train(base_model, output_dir, lang=args.lang)
+    train(
+        base_model,
+        output_dir,
+        lang=args.lang,
+        gradient_accumulation_steps=args.grad_acc_steps,
+        test_run=args.debug,
+    )
