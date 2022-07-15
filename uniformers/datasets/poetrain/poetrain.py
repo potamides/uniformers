@@ -22,11 +22,10 @@ from uniformers.datasets.poetrain.loaders import (
 from uniformers.utils import ALL_METERS, METERS, RHYME_LABELS, normalize_characters
 
 logger = logging.get_logger("transformers")
-SUPPORTED_LANGUAGES = ("en", "de")
 
 
 class PoeTrainConfig(builder.BuilderConfig):
-    """BuilderConfig for SuperGLUE."""
+    """BuilderConfig for PoeTrain."""
 
     def __init__(self, data_urls, label_classes, normalize=True, **kwargs):
         # Construct a version identifier huggingface is happy with...
@@ -100,7 +99,7 @@ class PoeTrain(builder.GeneratorBasedBuilder):
 
         all_texts = set()
         for dataset, filepath in datasets.items():
-            logger.info("Generating examples from '%s'.", filepath)
+            logger.debug("Generating examples from '%s'.", filepath)
             match dataset:
                 case "chicago": gtr = chicago_loader(filepath, self.config)
                 case "prosodic": gtr = prosodic_loader(filepath, self.config)

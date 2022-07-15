@@ -8,9 +8,6 @@ from os.path import join
 
 from uniformers.datasets import load_dataset
 
-dataset = load_dataset("poetrain", "meter", split="train")
-
-
 def count_labels(type_, column="labels", lang="all"):
     dataset = load_dataset("poetrain", type_, split="train")
     labels = dataset.features[column]  # pyright: ignore
@@ -26,7 +23,7 @@ def count_labels(type_, column="labels", lang="all"):
     return counts
 
 
-def gen_stats():
+def poetrain_stats():
     data = {"all": {}, "en": {}, "de": {}}
 
     for lang in data.keys():
@@ -35,7 +32,7 @@ def gen_stats():
         data[lang]["rhyme"] = count_labels("rhyme", lang=lang)
 
     for lang in data.keys():
-        print("{} Poetrain statics:".format({"all": "All", "en": " English", "de": "German"}[lang]))
+        print("{} PoeTrain statistics:".format({"all": "All", "en": " English", "de": "German"}[lang]))
         for key, value in zip(["Meter", "Original meter", "Rhyme"], data[lang].values()):
             print(f"  {key}:")
             for label, count in value.most_common():
@@ -43,6 +40,16 @@ def gen_stats():
 
     return data
 
+def quatrain_stats():
+    stats = {
+        "de": {"length": len(load_dataset("quatrain", lang="de", split="train"))}, # pyright: ignore
+        "en": {"length": len(load_dataset("quatrain", lang="en", split="train"))}, # pyright: ignore
+    }
+
+    print("QuaTrain statistics:")
+    print(f"  Number of English quatrains: {stats['en']['length']}")
+    print(f"  Number of German quatrains: {stats['de']['length']}")
+    return stats
 
 if __name__ == "__main__":
     argument_parser = ArgumentParser(
@@ -55,8 +62,7 @@ if __name__ == "__main__":
     )
     args = argument_parser.parse_args()
     makedirs(args.out_dir, exist_ok=True)
-    stats = gen_stats()
     with open(
-        join(args.out_dir, f"statistics-poetrain.json"), "w"
+        join(args.out_dir, f"dataset-statistics.json"), "w"
     ) as fp:
-        dump(stats, fp)
+        dump({"poetrain": poetrain_stats(), "quatrain": quatrain_stats()}, fp)

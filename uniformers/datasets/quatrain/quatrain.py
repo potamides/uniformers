@@ -1,44 +1,53 @@
-"""
-Combination of various datasets from the poetry domain in English and German.
-Poems are extracted as quatrains.
-"""
+from glob import glob
 from importlib.metadata import version
+from json import load
+from os.path import join
 from re import sub
 from typing import List
 
-from datasets import ClassLabel, Features, TextClassification, Value, builder
+from datasets import Features, Sequence, Value, builder
+from datasets.config import EXTRACTED_DATASETS_PATH
 from datasets.info import DatasetInfo
 from datasets.splits import Split, SplitGenerator
+from datasets.utils.file_utils import hash_url_to_filename
+from libarchive.public import memory_reader
 from transformers.utils import logging
 
-from uniformers.datasets.quatrain.loaders import (
-    chicago_loader,
-    #ecpa_loader,
-    fbfv_loader,
-    prosodic_loader,
-)
-from uniformers.utils import METERS, QUATRAIN_RHYME_SCHEMES
-
 logger = logging.get_logger("transformers")
-SUPPORTED_LANGUAGES = ("en", "de")
 
 
 class QuaTrainConfig(builder.BuilderConfig):
-    """BuilderConfig for SuperGLUE."""
+    """BuilderConfig for QuaTrain."""
 
-    def __init__(self, data_urls, label_classes, **kwargs):
-        """BuilderConfig for QuaTrain.
-
-        Args:
-        features: *list[string]*, list of the features that will appear in the
-            feature dict. Should not include "labels".
-        **kwargs: keyword arguments forwarded to super.
-        """
-
+    def __init__(self, lang, normalize=True, **kwargs):
         # Construct a version identifier huggingface is happy with...
-        super().__init__(version=sub(r"[^.\d]", "", ".".join(version("uniformers").split(".")[idx] for idx in [0,1,-1])), **kwargs)
-        self.data_urls = data_urls
-        self.label_classes = label_classes
+        super().__init__(name=lang, version=sub(r"[^.\d]", "", ".".join(version("uniformers").split(".")[idx] for idx in [0,1,-1])), **kwargs)
+        self.normalize = normalize
+        match lang:
+            case "de":
+                self.data_urls = [
+                    "https://github.com/tnhaider/DLK/raw/9b896f104bd282974244a40ddeaf9432a25922ba/DLK/standard/dlk.v5.german.poetry.corpus.full.json.z01",
+                    "https://github.com/tnhaider/DLK/raw/9b896f104bd282974244a40ddeaf9432a25922ba/DLK/standard/dlk.v5.german.poetry.corpus.full.json.zip",
+                ]
+            case "en":
+                self.data_urls = "https://github.com/tnhaider/metrical-tagging-in-the-wild/raw/c70f5ab7dfd865673cf9e9a9a36e54fc5445273d/data/English/LargeCorpus/eng_gutenberg_measures_all.json.zip"
+            case _:
+                raise ValueError
+
+
+def _multipart_extractor(files):
+    raw_data, extracted_files = bytes(), list()
+    for f in files:
+        with open(f, "rb") as fd:
+            raw_data += fd.read()
+
+    with memory_reader(raw_data) as e:
+        for entry in e:
+            with open(path := join(EXTRACTED_DATASETS_PATH, hash_url_to_filename(entry.pathname)), 'wb') as f:
+                for block in entry.get_blocks():
+                    f.write(block)
+                extracted_files.append(path)
+    return extracted_files
 
 
 class QuaTrain(builder.GeneratorBasedBuilder):
@@ -47,46 +56,32 @@ class QuaTrain(builder.GeneratorBasedBuilder):
     BUILDER_CONFIG_CLASS = QuaTrainConfig
     BUILDER_CONFIGS = [
         QuaTrainConfig(
-            name="meter",
-            data_urls={
-                "prosodic": "https://github.com/quadrismegistus/prosodic/archive/e665fa234ec460739ee5504a3a23177d25dd8864.zip",
-                "fbfv": "https://github.com/manexagirrezabal/for_better_for_verse/archive/152df1aac3b8b806e2681221ed314383c4cf2e8d.zip"
-                # ecpa seems to be machine annotated
-                #"ecpa": "https://github.com/alhuber1502/ECPA/archive/f4753c7d9d2b3583e8f3cb5eda0eb1f1fca0f6e4.zip"
-            },
-            description="A poetry corpus for rhymes.",
-            label_classes=METERS,
+            lang="de",
+            description="A German poetry corpus.",
         )
     ] + [
         QuaTrainConfig(
-            name="rhyme",
-            data_urls={
-                "chicago": "https://github.com/sravanareddy/rhymedata/archive/ba25424061778b97b7bcb1dac5b19beac257c8c2.zip",
-            },
-            description="A poetry corpus for meter.",
-            label_classes=QUATRAIN_RHYME_SCHEMES,
+            lang="en",
+            description="An English poetry corpus.",
         )
     ]
 
     def _info(self):
         return DatasetInfo(
             description=str(__doc__),
-            features=Features(
-                {
-                    "text": Value("string"),
-                    "language": Value("string"),
-                    "labels": ClassLabel(
-                        names=self.config.label_classes  # pyright: ignore
-                    ),
-                }
-            ),
+            features=Features({
+                "text": Sequence(Value("string"), 4),
+                "language": Value("string"),
+            }),
             supervised_keys=None,
-            task_templates=[TextClassification()],
         )
 
     def _split_generators(self, dl_manager) -> List[SplitGenerator]:
         urls_to_download = self.config.data_urls  # pyright: ignore
-        downloaded_files = dl_manager.download_and_extract(urls_to_download)
+        if type(urls_to_download) == list:
+            downloaded_files = _multipart_extractor(dl_manager.download(urls_to_download))
+        else:
+            downloaded_files = glob(join(str(dl_manager.download_and_extract(urls_to_download)), "*"))
 
         return [
             SplitGenerator(
@@ -96,17 +91,24 @@ class QuaTrain(builder.GeneratorBasedBuilder):
 
     def _generate_examples(self, datasets):
         """This function returns the examples in the raw (text) form."""
-
-        hashes = set()
-        for dataset, filepath in datasets.items():
-            logger.info("Generating examples from '%s'.", filepath)
-            match dataset:
-                case "chicago": gtr = chicago_loader(filepath, self.config)
-                case "prosodic": gtr = prosodic_loader(filepath, self.config)
-                case "fbfv": gtr = fbfv_loader(filepath, self.config)
-                case _: raise ValueError
-
-            for _id, example in gtr:
-                if not (ex_hash := hash(example["text"])) in hashes:
-                    hashes.add(ex_hash)
-                    yield _id, example
+        idx, skipped = 0, 0
+        for filepath in datasets:
+            logger.debug("Generating examples from '%s'.", filepath)
+            with open(filepath) as f:
+                for poem in load(f).values():
+                    for stanza in poem['poem'].values():
+                        lines = [line['text'] for line in stanza.values()]
+                        if len(lines) >= 4:
+                            for i in range(len(lines) - 3):
+                                quatrain = lines[i : i + 4]
+                                # some poems are not formatted correctly
+                                if any(verse.endswith("-") or len(verse) <=3 for verse in quatrain):
+                                    logger.debug("Skipping potentially garbled quatrain.")
+                                    skipped += 1
+                                    continue
+                                yield f"{self.config.name}-{idx}", {
+                                    "text": quatrain,
+                                    "language": "de",
+                                }
+                                idx += 1
+        logger.debug(f"Skipped {skipped} quatrains.")
