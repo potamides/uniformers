@@ -10,7 +10,7 @@ from datasets.config import EXTRACTED_DATASETS_PATH
 from datasets.info import DatasetInfo
 from datasets.splits import Split, SplitGenerator
 from datasets.utils.file_utils import hash_url_to_filename
-from libarchive.public import memory_reader
+from libarchive import memory_reader
 from transformers.utils import logging
 
 logger = logging.get_logger("transformers")
