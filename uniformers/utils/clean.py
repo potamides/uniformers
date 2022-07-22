@@ -1,0 +1,33 @@
+from string import punctuation
+from collections.abc import Iterable
+
+from sacremoses import MosesDetokenizer, MosesPunctNormalizer, MosesTokenizer
+
+# Some English datasets we use are already tokenized, so we have to be careful
+# with apostrophes. Generally, this change could lead to unintended
+# consequences but for the poetry domain it should be fine
+MosesTokenizer.ENGLISH_SPECIFIC_APOSTROPHE.insert(
+    0, (r"([{isn}])\s[']\s([s])".format(isn=MosesTokenizer.IsN), r"\1'\2")
+)
+MosesTokenizer.ENGLISH_SPECIFIC_APOSTROPHE.insert(
+    0, (r"([{0}])\s[']\s([{0}])".format(MosesTokenizer.IsAlpha), r"\1'\2")
+)
+
+# in German poetry the apostrophe is also used for contraction (in contrast to
+# prose), so we have to adapt that as well
+MosesTokenizer.NON_SPECIFIC_APOSTROPHE = r"\'", "'"  # pyright: ignore
+
+
+def clean_sentence(sentence, lang, remove_punct=True, protected=None):
+    mpn = MosesPunctNormalizer(lang=lang)
+    mt = MosesTokenizer(lang=lang)
+    md = MosesDetokenizer(lang=lang)
+
+    tokenized = mt.tokenize(mpn.normalize(sentence), protected_patterns=protected)
+    if remove_punct:
+        pct = remove_punct if isinstance(remove_punct, Iterable) else punctuation
+        # remove punctuation https://stackoverflow.com/a/56847275
+        tokenized = list(
+            filter(lambda token: any(t not in pct for t in token), tokenized)
+        )
+    return md.detokenize(tokenized)

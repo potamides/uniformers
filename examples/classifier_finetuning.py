@@ -29,7 +29,6 @@ def train(
     base_model,
     output_dir,
     task,
-    lang="en",
     gradient_accumulation_steps=1,
     gradient_checkpointing=False,
     test_run=False,
@@ -43,12 +42,12 @@ def train(
             model_init(base_model, task),
             tokenizer,
             output_dir,
-            lang=lang,
+            task=task,
             gradient_accumulation_steps=gradient_accumulation_steps,
             gradient_checkpointing=gradient_checkpointing,
             test_run=test_run,
         )
-        trainer.train()
+        trainer.grid_search()
         trainer.save_model()
         trainer.save_state()
         trainer.test()
@@ -97,7 +96,6 @@ if __name__ == "__main__":
         args.model_name_or_path,
         join(args.out_dir, basename(args.model_name_or_path), args.task),
         args.task,
-        lang=args.lang,
         gradient_accumulation_steps=args.grad_acc_steps,
         test_run=args.debug,
     )
