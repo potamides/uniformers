@@ -114,6 +114,7 @@ if __name__ == "__main__":
 
     if args.debug:
         set_verbosity_debug()
+        args.out_dir = join(args.out_dir, "debug")
 
     base_model = f"google/byt5-{args.model_size}"
     output_dir = join(

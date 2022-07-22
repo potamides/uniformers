@@ -91,6 +91,7 @@ if __name__ == "__main__":
 
     if args.debug:
         set_verbosity_debug()
+        args.out_dir = join(args.out_dir, "debug")
 
     train(
         args.model_name_or_path,
