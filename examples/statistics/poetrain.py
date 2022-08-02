@@ -40,20 +40,9 @@ def poetrain_stats():
 
     return data
 
-def quatrain_stats():
-    stats = {
-        "de": {"length": len(load_dataset("quatrain", lang="de", split="train"))}, # pyright: ignore
-        "en": {"length": len(load_dataset("quatrain", lang="en", split="train"))}, # pyright: ignore
-    }
-
-    print("QuaTrain statistics:")
-    print(f"  Number of English quatrains: {stats['en']['length']}")
-    print(f"  Number of German quatrains: {stats['de']['length']}")
-    return stats
-
 if __name__ == "__main__":
     argument_parser = ArgumentParser(
-        description="Compute statistics of Poetrain dataset."
+        description="Compute statistics of PoeTrain dataset."
     )
     argument_parser.add_argument(
         "--out_dir",
@@ -63,6 +52,6 @@ if __name__ == "__main__":
     args = argument_parser.parse_args()
     makedirs(args.out_dir, exist_ok=True)
     with open(
-        join(args.out_dir, f"dataset-statistics.json"), "w"
+        join(args.out_dir, f"poetrain-statistics.json"), "w"
     ) as fp:
-        dump({"poetrain": poetrain_stats(), "quatrain": quatrain_stats()}, fp)
+        dump(poetrain_stats(), fp)
