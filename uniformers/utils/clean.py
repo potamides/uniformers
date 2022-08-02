@@ -6,22 +6,22 @@ from sacremoses import MosesDetokenizer, MosesPunctNormalizer, MosesTokenizer
 # Some English datasets we use are already tokenized, so we have to be careful
 # with apostrophes. Generally, this change could lead to unintended
 # consequences but for the poetry domain it should be fine
-MosesTokenizer.ENGLISH_SPECIFIC_APOSTROPHE.insert(
-    0, (r"([{isn}])\s[']\s([s])".format(isn=MosesTokenizer.IsN), r"\1'\2")
-)
-MosesTokenizer.ENGLISH_SPECIFIC_APOSTROPHE.insert(
-    0, (r"([{0}])\s[']\s([{0}])".format(MosesTokenizer.IsAlpha), r"\1'\2")
-)
+ENGLISH_SPECIFIC_APOSTROPHE = [
+    (r"([{0}])\s[']\s([{0}])".format(MosesTokenizer.IsAlpha), r"\1'\2"),
+    (r"([{isn}])\s[']\s([s])".format(isn=MosesTokenizer.IsN), r"\1'\2"),
+] + MosesTokenizer.ENGLISH_SPECIFIC_APOSTROPHE
 
 # in German poetry the apostrophe is also used for contraction (in contrast to
 # prose), so we have to adapt that as well
-MosesTokenizer.NON_SPECIFIC_APOSTROPHE = r"\'", "'"  # pyright: ignore
+NON_SPECIFIC_APOSTROPHE = r"\'", "'"  # pyright: ignore
 
 
 def clean_sentence(sentence, lang, remove_punct=True, protected=None):
     mpn = MosesPunctNormalizer(lang=lang)
-    mt = MosesTokenizer(lang=lang)
     md = MosesDetokenizer(lang=lang)
+    mt = MosesTokenizer(lang=lang)
+    mt.ENGLISH_SPECIFIC_APOSTROPHE = ENGLISH_SPECIFIC_APOSTROPHE
+    mt.NON_SPECIFIC_APOSTROPHE = NON_SPECIFIC_APOSTROPHE # pyright: ignore
 
     tokenized = mt.tokenize(mpn.normalize(sentence), protected_patterns=protected)
     if remove_punct:
