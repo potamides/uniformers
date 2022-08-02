@@ -16,7 +16,7 @@ ENGLISH_SPECIFIC_APOSTROPHE = [
 NON_SPECIFIC_APOSTROPHE = r"\'", "'"  # pyright: ignore
 
 
-def clean_sentence(sentence, lang, remove_punct=True, protected=None):
+def clean_sentence(sentence, lang, remove_punct=True, protected=None, detokenize=True):
     mpn = MosesPunctNormalizer(lang=lang)
     md = MosesDetokenizer(lang=lang)
     mt = MosesTokenizer(lang=lang)
@@ -30,4 +30,4 @@ def clean_sentence(sentence, lang, remove_punct=True, protected=None):
         tokenized = list(
             filter(lambda token: any(t not in pct for t in token), tokenized)
         )
-    return md.detokenize(tokenized)
+    return md.detokenize(tokenized) if detokenize else tokenized
