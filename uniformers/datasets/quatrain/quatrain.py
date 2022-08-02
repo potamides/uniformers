@@ -102,13 +102,13 @@ class QuaTrain(builder.GeneratorBasedBuilder):
                             for i in range(len(lines) - 3):
                                 quatrain = lines[i : i + 4]
                                 # some poems are not formatted correctly
-                                if any(verse.endswith("-") or len(verse) <=3 for verse in quatrain):
+                                if any(verse.endswith("-") or "\n" in verse or 60 >= len(verse) <= 10 for verse in quatrain):
                                     logger.debug("Skipping potentially garbled quatrain.")
                                     skipped += 1
                                     continue
                                 yield f"{self.config.name}-{idx}", {
                                     "text": quatrain,
-                                    "language": "de",
+                                    "language": self.config.name,
                                 }
                                 idx += 1
         logger.debug(f"Skipped {skipped} quatrains.")
