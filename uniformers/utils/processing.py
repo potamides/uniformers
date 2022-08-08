@@ -11,7 +11,7 @@ from uniformers.utils import Phonemizer
 from uniformers.utils import alliteration_score, meter_to_label, scheme_to_label
 
 
-def process_aliterations(examples, phonemizer):
+def process_alliterations(examples, phonemizer):
     unique = list(set(chain.from_iterable(examples["text"])))
     verse2phoneme = dict(zip(unique, phonemizer(unique)))
 
@@ -20,7 +20,7 @@ def process_aliterations(examples, phonemizer):
         phonemes = [verse2phoneme[verse] for verse in quatrain]
         scores.append(mean(alliteration_score(verse) for verse in phonemes))
 
-    examples["aliteration"] = scores
+    examples["alliteration"] = scores
     return examples
 
 
@@ -93,5 +93,5 @@ class QuatrainProcessing:
     def __call__(self, examples):
         examples = process_rhymes(examples, self.clf_rhyme)
         examples = process_meters(examples, self.clf_meter)
-        examples = process_aliterations(examples, self.phonemizer)
+        examples = process_alliterations(examples, self.phonemizer)
         return examples

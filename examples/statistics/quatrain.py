@@ -19,7 +19,6 @@ def quatrain_stats(lang, args):
             batch_size=args.batch_size,
         ),
         batched=True,
-        remove_columns=dataset.column_names,  # pyright: ignore
     )
 
     stats = {"length": len(dataset), "meter": {}, "rhyme": {}} # pyright: ignore
@@ -27,12 +26,12 @@ def quatrain_stats(lang, args):
         stats['rhyme'][scheme] = len(dataset.filter(lambda example: example["rhyme"] == scheme)) # pyright: ignore
     for meter in METERS:
         stats['meter'][meter] = len(dataset.filter(lambda example: example["meter"] == meter)) # pyright: ignore
-    scores = asarray(dataset['aliteration']) # pyright: ignore
-    alit_low, alit_medium, alit_high = split(sorted(scores), [round(len(scores)*0.5), round(len(scores)*0.8)])
-    stats['aliteration'] = {
-        "low": [alit_low[0], alit_low[-1]],
-        "medium": [alit_medium[0], alit_medium[-1]],
-        "high": [alit_high[0], alit_high[-1]]
+    scores = asarray(dataset['alliteration']) # pyright: ignore
+    allit_low, allit_medium, allit_high = split(sorted(scores), [round(len(scores)*0.6), round(len(scores)*0.9)])
+    stats['alliteration'] = {
+        "low": [allit_low[0], allit_low[-1]],
+        "medium": [allit_medium[0], allit_medium[-1]],
+        "high": [allit_high[0], allit_high[-1]]
     }
 
     print(f"QuaTrain statistics ({lang}):")
@@ -41,8 +40,8 @@ def quatrain_stats(lang, args):
         print(f"  #{scheme}: {count}")
     for meter, count in stats['meter'].items():
         print(f"  #{meter}: {count}")
-    for alit_level, range_ in stats['aliteration'].items():
-        print(f"  Aliteration ({alit_level}) range: {range_}")
+    for allit_level, range_ in stats['alliteration'].items():
+        print(f"  Alliteration ({allit_level}) range: {range_}")
 
     return stats
 
