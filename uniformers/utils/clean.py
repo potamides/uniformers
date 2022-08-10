@@ -1,4 +1,5 @@
 from string import punctuation
+from typing import List
 from collections.abc import Iterable
 
 from sacremoses import MosesDetokenizer, MosesPunctNormalizer, MosesTokenizer
@@ -16,12 +17,18 @@ ENGLISH_SPECIFIC_APOSTROPHE = [
 NON_SPECIFIC_APOSTROPHE = r"\'", "'"  # pyright: ignore
 
 
-def clean_sentence(sentence, lang, remove_punct=True, protected=None, detokenize=True):
+def clean_sentence(
+    sentence: str,
+    lang: str,
+    remove_punct: bool | List[str] = True,
+    protected: None | List[str] = None,
+    detokenize: bool = True,
+):
     mpn = MosesPunctNormalizer(lang=lang)
     md = MosesDetokenizer(lang=lang)
     mt = MosesTokenizer(lang=lang)
     mt.ENGLISH_SPECIFIC_APOSTROPHE = ENGLISH_SPECIFIC_APOSTROPHE
-    mt.NON_SPECIFIC_APOSTROPHE = NON_SPECIFIC_APOSTROPHE # pyright: ignore
+    mt.NON_SPECIFIC_APOSTROPHE = NON_SPECIFIC_APOSTROPHE  # pyright: ignore
 
     tokenized = mt.tokenize(mpn.normalize(sentence), protected_patterns=protected)
     if remove_punct:
