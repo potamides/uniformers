@@ -63,7 +63,7 @@ class ByGPT5TokenizerForPoetry(ByGPT5Tokenizer):
         **kwargs
     ):
         super().__init__(**kwargs)
-        if len(alliteration_levels) + len(meters) + len(rhyme_schemes) > self.vocab_size - self._utf_vocab_size:
+        if len(alliteration_levels) + len(meters) + len(rhyme_schemes) > len(self.additional_special_tokens):
             raise ValueError("Number of special poetry tokens exceeds vocabulary size!")
 
         self._alliteration_levels = alliteration_levels
