@@ -4,3 +4,4 @@ from .normalize import *
 from .clean import *
 from .phonemes import *
 from .processing import *
+from .tokenizer import *
