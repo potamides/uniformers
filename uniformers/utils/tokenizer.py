@@ -25,7 +25,7 @@ class Poetry2Tokens():
         self._alliteration_levels = alliteration_levels
         self._meters = meters
         self._rhyme_schemes = rhyme_schemes
-        self._additional_special_ids = [tokenizer.convert_token_to_id(token) for token in tokenizer.additional_special_tokens]  # pyright: ignore
+        self._additional_special_ids = [tokenizer._convert_token_to_id(token) for token in tokenizer.additional_special_tokens]  # pyright: ignore
 
     @property
     def alliterations2tokens(self) -> Dict[str, str]:
@@ -39,24 +39,35 @@ class Poetry2Tokens():
 
     @property
     def meters2tokens(self) -> Dict[str, str]:
-        offset = len(self._alliteration_levels) - 1
+        offset = len(self._alliteration_levels)
         tokens = self.tokenizer.additional_special_tokens
         return {level: tokens[idx] for idx, level in enumerate(self._meters, offset)}
 
     @property
     def meters2ids(self) -> Dict[str, int]:
-        offset = len(self._alliteration_levels) - 1
+        offset = len(self._alliteration_levels)
         ids = self._additional_special_ids
         return {level: ids[idx] for idx, level in enumerate(self._meters, offset)}
 
     @property
     def rhymes2tokens(self) -> Dict[str, str]:
-        offset = len(self._alliteration_levels) + len(self._meters) - 1
+        offset = len(self._alliteration_levels) + len(self._meters)
         tokens = self.tokenizer.additional_special_tokens
         return {level: tokens[idx] for idx, level in enumerate(self._rhyme_schemes, offset)}
 
     @property
     def rhymes2ids(self) -> Dict[str, int]:
-        offset = len(self._alliteration_levels) + len(self._meters) - 1
+        offset = len(self._alliteration_levels) + len(self._meters)
         ids = self._additional_special_ids
         return {level: ids[idx] for idx, level in enumerate(self._rhyme_schemes, offset)}
+
+    @property
+    def tokens2forms(self) -> Dict[str, str]:
+        combined = self.alliterations2tokens | self.meters2tokens | self.rhymes2tokens
+        return {v: k for k, v in combined.items()}
+
+    @property
+    def ids2forms(self) -> Dict[int, str]:
+        combined = self.alliterations2ids | self.meters2ids | self.rhymes2ids
+        return {v: k for k, v in combined.items()}
+
