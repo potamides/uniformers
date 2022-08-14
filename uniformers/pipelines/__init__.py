@@ -1,1 +1,1 @@
-from .rhyme_classification import *
+from .poetry_classification import *
