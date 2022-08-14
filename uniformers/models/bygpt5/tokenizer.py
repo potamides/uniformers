@@ -1,7 +1,6 @@
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 from transformers.models.byt5.tokenization_byt5 import ByT5Tokenizer
-from ...utils.poetry import ALLITERATION_LEVELS, METERS, QUATRAIN_RHYME_SCHEMES
 
 
 class ByGPT5Tokenizer(ByT5Tokenizer):
@@ -52,55 +51,3 @@ class ByGPT5Tokenizer(ByT5Tokenizer):
         if is_split_into_words or self.add_prefix_space:
             text = " " + text
         return (text, kwargs)
-
-
-class ByGPT5TokenizerForPoetry(ByGPT5Tokenizer):
-    def __init__(
-        self,
-        alliteration_levels=ALLITERATION_LEVELS,
-        meters=METERS,
-        rhyme_schemes=QUATRAIN_RHYME_SCHEMES,
-        **kwargs
-    ):
-        super().__init__(**kwargs)
-        if len(alliteration_levels) + len(meters) + len(rhyme_schemes) > len(self.additional_special_tokens):
-            raise ValueError("Number of special poetry tokens exceeds vocabulary size!")
-
-        self._alliteration_levels = alliteration_levels
-        self._meters = meters
-        self._rhyme_schemes = rhyme_schemes
-        self._additional_special_ids = [self._convert_token_to_id(token) for token in self._additional_special_tokens]
-
-    @property
-    def alliterations2tokens(self) -> Dict[str, str]:
-        tokens = self._additional_special_tokens
-        return {level: tokens[idx] for idx, level in enumerate(self._alliteration_levels)}
-
-    @property
-    def alliterations2ids(self) -> Dict[str, int]:
-        ids = self._additional_special_ids
-        return {level: ids[idx] for idx, level in enumerate(self._alliteration_levels)}
-
-    @property
-    def meters2tokens(self) -> Dict[str, str]:
-        offset = len(self._alliteration_levels) - 1
-        tokens = self._additional_special_tokens
-        return {level: tokens[idx] for idx, level in enumerate(self._meters, offset)}
-
-    @property
-    def meters2ids(self) -> Dict[str, int]:
-        offset = len(self._alliteration_levels) - 1
-        ids = self._additional_special_ids
-        return {level: ids[idx] for idx, level in enumerate(self._meters, offset)}
-
-    @property
-    def rhymes2tokens(self) -> Dict[str, str]:
-        offset = len(self._alliteration_levels) + len(self._meters) - 1
-        tokens = self._additional_special_tokens
-        return {level: tokens[idx] for idx, level in enumerate(self._rhyme_schemes, offset)}
-
-    @property
-    def rhymes2ids(self) -> Dict[str, int]:
-        offset = len(self._alliteration_levels) + len(self._meters) - 1
-        ids = self._additional_special_ids
-        return {level: ids[idx] for idx, level in enumerate(self._rhyme_schemes, offset)}
