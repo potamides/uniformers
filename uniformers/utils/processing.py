@@ -3,10 +3,6 @@ from functools import cached_property
 from itertools import chain, combinations
 from statistics import mean
 
-from uniformers.pipelines import (
-    MeterClassificationPipeline,
-    RhymeClassificationPipeline,
-)
 from uniformers.utils import Phonemizer
 from uniformers.utils import alliteration_score, meter_to_label, scheme_to_label
 
@@ -76,12 +72,15 @@ class QuatrainProcessing:
 
     @cached_property
     def clf_meter(self):
+        # FIXME: there has to be a better way to solve this circular import
+        from uniformers.pipelines import  MeterClassificationPipeline
         return MeterClassificationPipeline(
             lang=self.lang, batch_size=self.bs, model_name=self.meter
         )
 
     @cached_property
     def clf_rhyme(self):
+        from uniformers.pipelines import  RhymeClassificationPipeline
         return RhymeClassificationPipeline(
             lang=self.lang, batch_size=self.bs, model_name=self.rhyme
         )
