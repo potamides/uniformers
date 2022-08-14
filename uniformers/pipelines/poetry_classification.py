@@ -9,7 +9,8 @@ from transformers.models.auto.modeling_auto import AutoModelForSequenceClassific
 from transformers.models.auto.tokenization_auto import AutoTokenizer
 from transformers.pipelines.text_classification import TextClassificationPipeline
 
-from uniformers.utils import METERS, RHYME_LABELS, clean_sentence
+from uniformers.utils.poetry import METERS, RHYME_LABELS
+from uniformers.utils.clean import clean_sentence
 
 
 class _AbstractPoetryClassificationPipeline(TextClassificationPipeline, ABC):
