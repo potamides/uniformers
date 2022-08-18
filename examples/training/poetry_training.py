@@ -1,5 +1,6 @@
 #!/usr/bin/env -S torchrun --nproc_per_node gpu
 from argparse import ArgumentParser
+from functools import partial
 from os.path import join
 from os.path import basename
 
@@ -45,28 +46,32 @@ def train(
     gradient_accumulation_steps=8,
     gradient_checkpointing=False,
     test_run=False,
+    do_test=True
 ):
+    Trainer = partial(
+        PoetryLMTrainer,
+        output_dir=output_dir,
+        lang=lang,
+        meter_model_name_or_path=meter_model_name_or_path,
+        rhyme_model_name_or_path=rhyme_model_name_or_path,
+        gradient_accumulation_steps=gradient_accumulation_steps,
+        gradient_checkpointing=gradient_checkpointing,
+        test_run=test_run,
+    )
     try:
         model, tokenizer = try_load(output_dir)
-        logger.info(f"Model already trained. Skipping.")
+        trainer = Trainer(model, tokenizer)
+        logger.info(f"Model already trained. Skipping training.")
     except EnvironmentError:
         model, tokenizer = try_load(base_model)
-        trainer = PoetryLMTrainer(
-            model,
-            tokenizer,
-            output_dir,
-            lang=lang,
-            meter_model_name_or_path=meter_model_name_or_path,
-            rhyme_model_name_or_path=rhyme_model_name_or_path,
-            gradient_accumulation_steps=gradient_accumulation_steps,
-            gradient_checkpointing=gradient_checkpointing,
-            test_run=test_run,
-        )
+        trainer = Trainer(model, tokenizer)
         trainer.train()
         trainer.save_model()
         trainer.save_state()
-        trainer.test()
         model = trainer.model
+
+    if do_test:
+        trainer.test()
     return model, tokenizer
 
 
@@ -130,5 +135,3 @@ if __name__ == "__main__":
         gradient_accumulation_steps=args.grad_acc_steps,
         test_run=args.debug,
     )
-
-# examples/training/poetry_training.py --model_name_or_path=models/bygpt5-base/de --out_dir=models/poetry --out_name=bygpt5-base --meter_model_name_or_path=models/canine-c/clf-canine-m --rhyme_model_name_or_path=models/canine-c/clf-canine-r --lang=de --grad_acc_steps=8

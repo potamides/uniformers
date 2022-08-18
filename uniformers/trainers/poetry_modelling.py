@@ -57,7 +57,7 @@ class PoetryLMTrainingArguments(GlobalBatchTrainingArguments):
         self,
         eval_multiplier=10,
         max_length=384,
-        num_beams=5,
+        num_beams=1,
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -79,7 +79,7 @@ class PoetryLMTrainer(Trainer):
         fp16=False,
         bf16=True,
         tf32=False,
-        batch_size=512,
+        batch_size=128,
         overwrite_output_dir=False,
         # only change below stuff when model doesn't fit into memory (see
         # https://huggingface.co/docs/transformers/performance)
@@ -304,6 +304,10 @@ class PoetryLMTrainer(Trainer):
             "num_beams": self.args.num_beams
             if self.args.num_beams is not None
             else self.model.config.num_beams,
+            "do_sample": True,
+            "temperature": 0.6,
+            "top_p": 0.9,
+            "top_k": 0
         }
 
         if "attention_mask" in inputs:
