@@ -1,4 +1,3 @@
-from copy import deepcopy
 from functools import partial
 from functools import cached_property
 from os.path import isdir, isfile, join
@@ -10,6 +9,8 @@ from numpy import where
 from torch import tensor
 from torch import Tensor, nn
 from transformers.data.data_collator import DataCollatorForLanguageModeling
+from transformers.models.gpt2.tokenization_gpt2 import GPT2Tokenizer
+from transformers.models.gpt2.tokenization_gpt2_fast import GPT2TokenizerFast
 from transformers.trainer import Trainer
 from transformers.trainer_utils import get_last_checkpoint
 from transformers.utils import logging
@@ -31,6 +32,9 @@ from .training_args import GlobalBatchTrainingArguments
 
 logger = logging.get_logger("transformers")
 
+def _add_special_tokens(tokenizer, texts):
+    bos, eos = tokenizer.bos_token, tokenizer.eos_token
+    return [bos + text + eos for text in texts]
 
 def _tokenize(examples, p2t, lang, medium, high):
     texts, cats = list(), ("text", "rhyme", "meter", "alliteration")
@@ -49,7 +53,7 @@ def _tokenize(examples, p2t, lang, medium, high):
         clean_text = "\n".join(clean_sentence(verse, lang, remove_punct=["="]) for verse in text)  # pyright: ignore
         texts.append(f"{rhyme_token}{meter_token}{allit_token}{clean_text}")
 
-    return p2t.tokenizer(texts)
+    return p2t.tokenizer(_add_special_tokens(p2t.tokenizer, texts))
 
 
 class PoetryLMTrainingArguments(GlobalBatchTrainingArguments):
@@ -91,6 +95,7 @@ class PoetryLMTrainer(Trainer):
 
         self.model = model
         self.tokenizer = tokenizer
+        self.patch_tokenizer()
         data_collator = DataCollatorForLanguageModeling(self.tokenizer, mlm=False)
 
         if self.parameters < 280 * 10**6:
@@ -186,15 +191,23 @@ class PoetryLMTrainer(Trainer):
 
         return rhyme_scores | meter_scores | allit_scores  # pyright: ignore
 
-    def load_dataset(self, lang, meter_model, rhyme_model, bs, test):
-        # deepcopy tokenizer sincd we change some tokenizer attributes
-        # without deepcopying this might have side effects
-        tokenizer = deepcopy(self.tokenizer)
-        if isinstance(tokenizer, ByGPT5Tokenizer):
-            tokenizer.add_bos_token = True
-            tokenizer.add_eos_token = True
-            tokenizer.bos_token = tokenizer.eos_token
+    def patch_tokenizer(self):
+        if isinstance(self.tokenizer, ByGPT5Tokenizer):
+            self.tokenizer.add_bos_token = False
+            self.tokenizer.add_eos_token = False
+            self.tokenizer.bos_token = self.tokenizer.eos_token
+        elif isinstance(self.tokenizer, (GPT2Tokenizer, GPT2TokenizerFast)):
+            assert not self.tokenizer.additional_special_tokens
+            self.tokenizer.add_bos_token = False # pyright: ignore
+            num_special = len(ALLITERATION_LEVELS + METERS + QUATRAIN_RHYME_SCHEMES)
+            special = {
+                "additional_special_tokens": [f"<extra_id_{idx}>" for idx in range(num_special)],
+                'pad_token': '<pad>'
+            }
+            self.tokenizer.add_special_tokens(special) # pyright: ignore
+            self.model.resize_token_embeddings(len(self.tokenizer))
 
+    def load_dataset(self, lang, meter_model, rhyme_model, bs, test):
         raw_dataset = load_dataset(
             "quatrain", lang=lang, split="train" + ("[:20000]" if test else "")
         )
@@ -213,7 +226,7 @@ class PoetryLMTrainer(Trainer):
             batched=True,
             fn_kwargs={  # pyright: ignore
                 "lang": lang,
-                "p2t": (p2t := Poetry2Tokens(tokenizer)),
+                "p2t": (p2t := Poetry2Tokens(self.tokenizer)),
                 "medium": (medium := 0.05),
                 "high": (high := 0.1),
             },
@@ -223,7 +236,7 @@ class PoetryLMTrainer(Trainer):
         sample = tokenized_dataset[index := randrange(len(tokenized_dataset))][
             "input_ids"
         ]
-        detokenized = tokenizer.decode(sample)
+        detokenized = self.tokenizer.decode(sample)
         logger.info(f"Sample {index} of the training set: {sample}")
         logger.info(f"Sample {index} of the training set (detokenized): {detokenized}")
 
@@ -235,13 +248,13 @@ class PoetryLMTrainer(Trainer):
             # classification model uses this label so we omit it from evaluation
             for meter in [p2t.meters2tokens[meter] for meter in filter(lambda m: m != "other", METERS) ]:
                 for alliteration in [p2t.alliterations2tokens[allit] for allit in ALLITERATION_LEVELS ]:
-                    bos = tokenizer.bos_token
+                    bos = self.tokenizer.bos_token
                     eval_dataset.extend(
                         [bos + rhyme + meter + alliteration] * self.args.eval_multiplier
                     )
             if test:
                 break
-        tokenized_eval_dataset = Dataset.from_dict(tokenizer(eval_dataset, add_special_tokens=False))  # pyright: ignore
+        tokenized_eval_dataset = Dataset.from_dict(self.tokenizer(eval_dataset, add_special_tokens=False))  # pyright: ignore
 
         return tokenized_dataset, tokenized_eval_dataset, medium, high
 

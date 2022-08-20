@@ -1,7 +1,6 @@
 from typing import Dict
 
 from uniformers.utils import ALLITERATION_LEVELS, METERS, QUATRAIN_RHYME_SCHEMES
-from uniformers.models.bygpt5 import ByGPT5Tokenizer
 
 
 class Poetry2Tokens():
@@ -13,19 +12,13 @@ class Poetry2Tokens():
         rhyme_schemes=QUATRAIN_RHYME_SCHEMES,
     ):
         if len(alliteration_levels) + len(meters) + len(rhyme_schemes) > len(tokenizer.additional_special_tokens):
-            # TODO tokenizer.add_special_tokens({"additional_special_tokens": ["<...>"]})
             raise ValueError("Number of special poetry tokens exceeds vocabulary size!")
-
-        if isinstance(tokenizer, ByGPT5Tokenizer):
-            tokenizer.add_bos_token = True
-            tokenizer.add_eos_token = True
-            tokenizer.bos_token = tokenizer.eos_token
 
         self.tokenizer = tokenizer
         self._alliteration_levels = alliteration_levels
         self._meters = meters
         self._rhyme_schemes = rhyme_schemes
-        self._additional_special_ids = [tokenizer._convert_token_to_id(token) for token in tokenizer.additional_special_tokens]  # pyright: ignore
+        self._additional_special_ids = tokenizer.convert_tokens_to_ids(tokenizer.additional_special_tokens)
 
     @property
     def alliterations2tokens(self) -> Dict[str, str]:
