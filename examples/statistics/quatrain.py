@@ -4,8 +4,6 @@ from json import dump
 from os import makedirs
 from os.path import join
 
-from numpy import asarray, split
-
 from uniformers.datasets import load_dataset
 from uniformers.utils import METERS, QUATRAIN_RHYME_SCHEMES, QuatrainProcessing
 
@@ -26,12 +24,12 @@ def quatrain_stats(lang, args):
         stats['rhyme'][scheme] = len(dataset.filter(lambda example: example["rhyme"] == scheme)) # pyright: ignore
     for meter in METERS:
         stats['meter'][meter] = len(dataset.filter(lambda example: example["meter"] == meter)) # pyright: ignore
-    scores = asarray(dataset['alliteration']) # pyright: ignore
-    allit_low, allit_medium, allit_high = split(sorted(scores), [round(len(scores)*0.6), round(len(scores)*0.9)])
+
+    scores, medium, high = dataset['alliteration'], 0.05, 0.1 # pyright: ignore
     stats['alliteration'] = {
-        "low": [allit_low[0], allit_low[-1]],
-        "medium": [allit_medium[0], allit_medium[-1]],
-        "high": [allit_high[0], allit_high[-1]]
+        "low": len(list(filter(lambda x: x < medium, scores)))/len(scores), # pyright: ignore
+        "medium": len(list(filter(lambda x: medium <= x < high, scores)))/len(scores), # pyright: ignore
+        "high": len(list(filter(lambda x: high <= x, scores)))/len(scores) # pyright: ignore
     }
 
     print(f"QuaTrain statistics ({lang}):")

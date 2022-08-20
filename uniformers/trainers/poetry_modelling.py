@@ -6,7 +6,7 @@ from random import randrange
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 from datasets.arrow_dataset import Dataset
-from numpy import asarray, split, where
+from numpy import where
 from torch import tensor
 from torch import Tensor, nn
 from transformers.data.data_collator import DataCollatorForLanguageModeling
@@ -208,18 +208,14 @@ class PoetryLMTrainer(Trainer):
             batched=True,
         )
 
-        scores = asarray(dataset["alliteration"])  # pyright: ignore
-        _, allit_medium, allit_high = split(
-            sorted(scores), [round(len(scores) * 0.6), round(len(scores) * 0.9)]
-        )
         tokenized_dataset = dataset.map(
             _tokenize,
             batched=True,
             fn_kwargs={  # pyright: ignore
                 "lang": lang,
                 "p2t": (p2t := Poetry2Tokens(tokenizer)),
-                "medium": (medium := allit_medium[0]),
-                "high": (high := allit_high[0]),
+                "medium": (medium := 0.05),
+                "high": (high := 0.1),
             },
         )
 
@@ -298,6 +294,7 @@ class PoetryLMTrainer(Trainer):
         inputs = self._prepare_inputs(inputs)
 
         gen_kwargs = {
+            "bad_words_ids": [[id_] for id_ in self.tokenizer.additional_special_tokens_ids],
             "max_length": self.args.max_length
             if self.args.max_length is not None
             else self.model.config.max_length,

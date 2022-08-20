@@ -13,7 +13,7 @@ class Poetry2Tokens():
         rhyme_schemes=QUATRAIN_RHYME_SCHEMES,
     ):
         if len(alliteration_levels) + len(meters) + len(rhyme_schemes) > len(tokenizer.additional_special_tokens):
-            # TODO
+            # TODO tokenizer.add_special_tokens({"additional_special_tokens": ["<...>"]})
             raise ValueError("Number of special poetry tokens exceeds vocabulary size!")
 
         if isinstance(tokenizer, ByGPT5Tokenizer):
