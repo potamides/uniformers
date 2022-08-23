@@ -197,7 +197,6 @@ class PoetryLMTrainer(Trainer):
             self.tokenizer.add_eos_token = False
             self.tokenizer.bos_token = self.tokenizer.eos_token
         elif isinstance(self.tokenizer, (GPT2Tokenizer, GPT2TokenizerFast)):
-            assert not self.tokenizer.additional_special_tokens
             self.tokenizer.add_bos_token = False # pyright: ignore
             num_special = len(ALLITERATION_LEVELS + METERS + QUATRAIN_RHYME_SCHEMES)
             special = {
