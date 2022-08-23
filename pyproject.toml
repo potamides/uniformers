@@ -39,7 +39,9 @@ dynamic = ["version"]
 repository = "https://github.com/potamides/uniformers"
 
 [project.optional-dependencies]
-examples = []
+examples = [
+  "termcolor~=1.1.0"
+]
 
 [tool.setuptools_scm]
 write_to = "uniformers/_version.py"
