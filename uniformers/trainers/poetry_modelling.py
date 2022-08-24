@@ -2,15 +2,20 @@ from functools import partial
 from functools import cached_property
 from os.path import isdir, isfile, join
 from random import randrange
+from re import sub
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 from datasets.arrow_dataset import Dataset
 from numpy import where
-from torch import tensor
-from torch import Tensor, nn
-from transformers.data.data_collator import DataCollatorForLanguageModeling
+from torch import Tensor, cat, full, nn, tensor
+from transformers.data.data_collator import (
+    DataCollatorForLanguageModeling,
+    DataCollatorForSeq2Seq,
+)
 from transformers.models.gpt2.tokenization_gpt2 import GPT2Tokenizer
 from transformers.models.gpt2.tokenization_gpt2_fast import GPT2TokenizerFast
+from transformers.models.t5.tokenization_t5 import T5Tokenizer
+from transformers.models.t5.tokenization_t5_fast import T5TokenizerFast
 from transformers.trainer import Trainer
 from transformers.trainer_utils import get_last_checkpoint
 from transformers.utils import logging
@@ -36,8 +41,8 @@ def _add_special_tokens(tokenizer, texts):
     bos, eos = tokenizer.bos_token, tokenizer.eos_token
     return [bos + text + eos for text in texts]
 
-def _tokenize(examples, p2t, lang, medium, high):
-    texts, cats = list(), ("text", "rhyme", "meter", "alliteration")
+def _tokenize(examples, p2t, lang, medium, high, is_encoder_decoder=False):
+    inputs, labels, cats = list(), list(), ("text", "rhyme", "meter", "alliteration")
     for text, rhyme, meter, score in zip(*[examples[cat] for cat in cats]):  # pyright: ignore
         if score < medium:
             alliteration = "low"
@@ -51,9 +56,17 @@ def _tokenize(examples, p2t, lang, medium, high):
         allit_token = p2t.alliterations2tokens[alliteration]
         # remove = from sentences (English corpus uses it weirdly)
         clean_text = "\n".join(clean_sentence(verse, lang, remove_punct=["="]) for verse in text)  # pyright: ignore
-        texts.append(f"{rhyme_token}{meter_token}{allit_token}{clean_text}")
 
-    return p2t.tokenizer(_add_special_tokens(p2t.tokenizer, texts))
+        inputs.append(rhyme_token + meter_token + allit_token)
+        labels.append(clean_text)
+
+    if is_encoder_decoder:
+        model_inputs = p2t.tokenizer(inputs, add_special_tokens=False)
+        labels = p2t.tokenizer(labels)
+        model_inputs["labels"] = labels["input_ids"]
+        return model_inputs
+    else:
+        return p2t.tokenizer(_add_special_tokens(p2t.tokenizer, [i + l for i, l in zip(inputs, labels)]))
 
 
 class PoetryLMTrainingArguments(GlobalBatchTrainingArguments):
@@ -96,7 +109,11 @@ class PoetryLMTrainer(Trainer):
         self.model = model
         self.tokenizer = tokenizer
         self.patch_tokenizer()
-        data_collator = DataCollatorForLanguageModeling(self.tokenizer, mlm=False)
+
+        if model.config.is_encoder_decoder:
+            data_collator = DataCollatorForSeq2Seq(self.tokenizer, self.model)
+        else:
+            data_collator = DataCollatorForLanguageModeling(self.tokenizer, mlm=False)
 
         if self.parameters < 280 * 10**6:
             learning_rate = "base"
@@ -166,7 +183,7 @@ class PoetryLMTrainer(Trainer):
     def compute_metrics(self, lang, medium, high, meter_model, rhyme_model, bs, p):
         preds = p.predictions[0] if isinstance(p.predictions, tuple) else p.predictions
         # replace dynamic padding index with true padding index
-        preds = self.tokenizer.batch_decode(where(preds == -100, self.tokenizer.pad_token_id, preds))
+        preds = self.decode(where(preds == -100, self.tokenizer.pad_token_id, preds), batch=True)
         # remove text after eos token (if token exists)
         preds = [pred[: pred.find(self.tokenizer.eos_token, len(self.tokenizer.eos_token))] for pred in preds]
 
@@ -198,6 +215,12 @@ class PoetryLMTrainer(Trainer):
             self.tokenizer.bos_token = self.tokenizer.eos_token
         elif isinstance(self.tokenizer, (GPT2Tokenizer, GPT2TokenizerFast)):
             self.tokenizer.add_bos_token = False # pyright: ignore
+        elif isinstance(self.tokenizer, (T5Tokenizer, T5TokenizerFast)):
+            # sentencepiece replaces \n, so we need our own symbol (e.g., as sep_token)
+            self.tokenizer.add_special_tokens({"sep_token": "\n"}) # pyright: ignore
+            self.model.resize_token_embeddings(len(self.tokenizer))
+
+        if not self.tokenizer.additional_special_tokens:
             num_special = len(ALLITERATION_LEVELS + METERS + QUATRAIN_RHYME_SCHEMES)
             special = {
                 "additional_special_tokens": [f"<extra_id_{idx}>" for idx in range(num_special)],
@@ -228,16 +251,19 @@ class PoetryLMTrainer(Trainer):
                 "p2t": (p2t := Poetry2Tokens(self.tokenizer)),
                 "medium": (medium := 0.05),
                 "high": (high := 0.1),
+                "is_encoder_decoder": self.model.config.is_encoder_decoder,
             },
         )
 
         index = randrange(len(tokenized_dataset))
-        sample = tokenized_dataset[index := randrange(len(tokenized_dataset))][
-            "input_ids"
-        ]
-        detokenized = self.tokenizer.decode(sample)
-        logger.info(f"Sample {index} of the training set: {sample}")
-        logger.info(f"Sample {index} of the training set (detokenized): {detokenized}")
+        sample = tokenized_dataset[index]
+        detokenized = self.decode(sample["input_ids"])
+        logger.info(f"Input sample {index} of the training set: {sample['input_ids']}")
+        logger.info(f"Input sample {index} of the training set (detokenized): {detokenized}")
+        if "labels" in sample: # pyright: ignore
+            detokenized = self.decode(sample["labels"])
+            logger.info(f"Label sample {index} of the training set: {sample['labels']}")
+            logger.info(f"Label sample {index} of the training set (detokenized): {detokenized}")
 
         eval_dataset = list()
         # all combinations of rhymes, meters and alliteration levels
@@ -247,7 +273,7 @@ class PoetryLMTrainer(Trainer):
             # classification model uses this label so we omit it from evaluation
             for meter in [p2t.meters2tokens[meter] for meter in filter(lambda m: m != "other", METERS) ]:
                 for alliteration in [p2t.alliterations2tokens[allit] for allit in ALLITERATION_LEVELS ]:
-                    bos = self.tokenizer.bos_token
+                    bos = "" if self.model.config.is_encoder_decoder else self.tokenizer.bos_token
                     eval_dataset.extend(
                         [bos + rhyme + meter + alliteration] * self.args.eval_multiplier
                     )
@@ -256,6 +282,13 @@ class PoetryLMTrainer(Trainer):
         tokenized_eval_dataset = Dataset.from_dict(self.tokenizer(eval_dataset, add_special_tokens=False))  # pyright: ignore
 
         return tokenized_dataset, tokenized_eval_dataset, medium, high
+
+    def decode(self, ids, batch=False):
+        decoded = self.tokenizer.batch_decode(ids) if batch else [self.tokenizer.decode(ids)]
+        # remove spaces sentencepiece adds around newline
+        for idx, sent in enumerate(decoded):
+            decoded[idx] = sub(r"\s*\n\s*", "\n", sent)
+        return decoded if batch else decoded[0]
 
     def train(self, **kwargs):
         if not self.args.overwrite_output_dir and isdir(output_dir := self.args.output_dir):
@@ -339,6 +372,12 @@ class PoetryLMTrainer(Trainer):
             generation_inputs,
             **gen_kwargs,
         )
+
+        if self.model.config.is_encoder_decoder:
+            # add a start tensor so that eval code works (it expects a bos_token)
+            start_tensor = full((len(generation_inputs), 1), self.model.config.decoder_start_token_id, device=self.args.device)
+            generated_tokens = cat((start_tensor, generation_inputs, generated_tokens), dim=1)
+            pass
 
         return (None, generated_tokens, tensor([], device=self.args.device))
 

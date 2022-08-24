@@ -42,6 +42,10 @@ repository = "https://github.com/potamides/uniformers"
 examples = [
   "termcolor~=1.1.0"
 ]
+mt5 = [
+  "protobuf==3.20.0",
+  "sentencepiece==0.1.97"
+]
 
 [tool.setuptools_scm]
 write_to = "uniformers/_version.py"
