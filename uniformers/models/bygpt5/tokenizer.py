@@ -1,3 +1,4 @@
+from re import sub
 from typing import List, Optional
 
 from transformers.models.byt5.tokenization_byt5 import ByT5Tokenizer
@@ -51,3 +52,12 @@ class ByGPT5Tokenizer(ByT5Tokenizer):
         if is_split_into_words or self.add_prefix_space:
             text = " " + text
         return (text, kwargs)
+
+    @staticmethod
+    def clean_up_tokenization(out_string: str) -> str:
+        out_string = ByT5Tokenizer.clean_up_tokenization(out_string)
+        # English poetry training data contains some tokenization artifacts
+        # (i.e, model sometimes generates "He 'll" instead of "He'll"). The
+        # following pattern fixes this
+        out_string = sub(r"\s('\w{1,2})", r"\1", out_string)
+        return out_string
