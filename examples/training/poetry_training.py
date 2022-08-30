@@ -43,6 +43,7 @@ def train(
     lang="en",
     meter_model_name_or_path="nllg/clf-canine-m",
     rhyme_model_name_or_path="nllg/clf-canine-r",
+    coherence_model_name_or_path="bert-base-multilingual-cased",
     gradient_accumulation_steps=8,
     gradient_checkpointing=False,
     test_run=False,
@@ -54,6 +55,7 @@ def train(
         lang=lang,
         meter_model_name_or_path=meter_model_name_or_path,
         rhyme_model_name_or_path=rhyme_model_name_or_path,
+        coherence_model_name_or_path=coherence_model_name_or_path,
         gradient_accumulation_steps=gradient_accumulation_steps,
         gradient_checkpointing=gradient_checkpointing,
         test_run=test_run,
@@ -95,6 +97,11 @@ if __name__ == "__main__":
         help="name or path of the rhyme classification model",
     )
     argument_parser.add_argument(
+        "--coherence_model_name_or_path",
+        default="bert-base-multilingual-cased",
+        help="name or path of the coherence model (for BERT NSP)",
+    )
+    argument_parser.add_argument(
         "--out_dir",
         default="models",
         help="directory where to write the model files",
@@ -131,6 +138,7 @@ if __name__ == "__main__":
         join(args.out_dir, args.out_name or basename(args.model_name_or_path), args.lang),
         meter_model_name_or_path=args.meter_model_name_or_path,
         rhyme_model_name_or_path=args.rhyme_model_name_or_path,
+        coherence_model_name_or_path=args.coherence_model_name_or_path,
         lang=args.lang,
         gradient_accumulation_steps=args.grad_acc_steps,
         test_run=args.debug,

@@ -91,6 +91,7 @@ class PoetryLMTrainer(Trainer):
         output_dir,
         meter_model_name_or_path="nllg/clf-canine-m",
         rhyme_model_name_or_path="nllg/clf-canine-r",
+        coherence_model_name_or_path="bert-base-multilingual-cased",
         lang="en",
         # https://github.com/huggingface/transformers/issues/14608#issuecomment-1004390803
         fp16=False,
@@ -175,12 +176,13 @@ class PoetryLMTrainer(Trainer):
                 high,
                 meter_model_name_or_path,
                 rhyme_model_name_or_path,
+                coherence_model_name_or_path,
                 batch_size,
             ),
             **kwargs,
         )
 
-    def compute_metrics(self, lang, medium, high, meter_model, rhyme_model, bs, p):
+    def compute_metrics(self, lang, medium, high, meter_model, rhyme_model, coherence_model, bs, p):
         preds = p.predictions[0] if isinstance(p.predictions, tuple) else p.predictions
         # replace dynamic padding index with true padding index
         preds = self.decode(where(preds == -100, self.tokenizer.pad_token_id, preds), batch=True)
@@ -205,8 +207,11 @@ class PoetryLMTrainer(Trainer):
         allit_scores = load_metric(
             "alliteration", language=lang, batch_size=bs, medium=medium, high=high
         ).compute(quatrains=preds, levels=allits)
+        coherence_scores = load_metric(
+            "coherence", batch_size=bs, model_name=coherence_model
+        ).compute(quatrains=preds)
 
-        return rhyme_scores | meter_scores | allit_scores  # pyright: ignore
+        return rhyme_scores | meter_scores | allit_scores | coherence_scores  # pyright: ignore
 
     def patch_tokenizer(self):
         if isinstance(self.tokenizer, ByGPT5Tokenizer):
