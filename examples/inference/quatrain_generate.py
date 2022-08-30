@@ -154,7 +154,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--model_name_or_path",
-        default="nllg/poetry-bygpt5-medium-en",
+        default="nllg/poetry-bygpt5-base-en",
         help="name of the model in huggingface hub or path if local",
     )
     parser.add_argument(
