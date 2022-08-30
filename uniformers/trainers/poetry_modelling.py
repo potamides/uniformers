@@ -72,7 +72,7 @@ def _tokenize(examples, p2t, lang, medium, high, is_encoder_decoder=False):
 class PoetryLMTrainingArguments(GlobalBatchTrainingArguments):
     def __init__(
         self,
-        eval_multiplier=10,
+        eval_multiplier=75,
         max_length=384,
         num_beams=1,
         **kwargs,
@@ -135,7 +135,7 @@ class PoetryLMTrainer(Trainer):
             num_train_epochs=1 if test_run else 10,
             weight_decay=0.1,
             warmup_ratio=0.01,
-            eval_multiplier=1 if test_run else 10,
+            eval_multiplier=5 if test_run else 75,
             global_train_batch_size=batch_size,
             global_eval_batch_size=batch_size,
             fp16=fp16,
@@ -266,12 +266,10 @@ class PoetryLMTrainer(Trainer):
             logger.info(f"Label sample {index} of the training set (detokenized): {detokenized}")
 
         eval_dataset = list()
-        # all combinations of rhymes, meters and alliteration levels
-        for rhyme in [p2t.rhymes2tokens[rhyme] for rhyme in QUATRAIN_RHYME_SCHEMES]:
-            # We use meter 'other' to annotate quatrains which do not have
-            # matching meters in their verses. This is different to how the meter
-            # classification model uses this label so we omit it from evaluation
-            for meter in [p2t.meters2tokens[meter] for meter in filter(lambda m: m != "other", METERS) ]:
+        # evaluate on common combinations rhymes, meters and alliteration levels
+        for rhyme in [p2t.rhymes2tokens[rhyme] for rhyme in ["AABB", "ABCB", "ABAB", "ABBA"]]:
+            meters = ["alexandrine", "iambus", "trochee"] if lang == "de" else ["anapaest", "dactyl", "iambus", "trochee"]
+            for meter in [p2t.meters2tokens[meter] for meter in meters]:
                 for alliteration in [p2t.alliterations2tokens[allit] for allit in ALLITERATION_LEVELS ]:
                     bos = "" if self.model.config.is_encoder_decoder else self.tokenizer.bos_token
                     eval_dataset.extend(
@@ -347,7 +345,7 @@ class PoetryLMTrainer(Trainer):
             if self.args.num_beams is not None
             else self.model.config.num_beams,
             "do_sample": True,
-            "temperature": 0.6,
+            "temperature": 0.7,
             "top_p": 0.9,
             "top_k": 0
         }
