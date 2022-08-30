@@ -1,9 +1,12 @@
-import datasets.metric
+from collections import defaultdict
+from itertools import chain, combinations
+from statistics import harmonic_mean as hmean, mean
+
 from datasets import Features, Value
 from datasets.info import MetricInfo
+import datasets.metric
+
 from uniformers.pipelines import RhymeClassificationPipeline
-from itertools import combinations
-from statistics import mean, harmonic_mean
 from uniformers.utils.poetry import QUATRAIN_RHYME_SCHEMES
 
 class Rhyme(datasets.metric.Metric):
@@ -41,7 +44,7 @@ class Rhyme(datasets.metric.Metric):
                 filtered_quatrains.append(splitted)
                 filtered_schemes.append(scheme)
 
-        return filtered_quatrains, filtered_schemes, [[0.0]] * (len(schemes) - len(filtered_schemes))
+        return filtered_quatrains, filtered_schemes, [{"rhyme": [0.0], "dissonance": [0.0]}] * (len(schemes) - len(filtered_schemes))
 
     def _compute(
         self,
@@ -49,23 +52,33 @@ class Rhyme(datasets.metric.Metric):
         schemes,
     ):
         quatrains, schemes, all_scores = self._preprocess(quatrains, schemes)
-        results = self.pipeline([comb for text in quatrains for comb in combinations(text, r=2)])
+        results: list = self.pipeline([comb for text in quatrains for comb in combinations(text, r=2)])
 
         for i in range(0, len(results), 6):
             quatrain_results = results[i:i+6]
             scheme = schemes[i//6]
-            scores = list()
+            scores = defaultdict(list)
             for j, (a, b) in enumerate(combinations(scheme, r=2)):
                 for result in quatrain_results[j]:
                     # corresponds to this metric: https://stats.stackexchange.com/a/517971
                     if result['label'] == ("rhyme" if a == b else "dissonance"):
-                        scores.append(result['score'])
+                        scores[result['label']].append(result['score'])
                         break
-            assert len(scores) == 6
+            assert len(list(chain.from_iterable(scores.values()))) == 6
             all_scores.append(scores)
 
+        def reduce(rhyme, dissonance, op):
+            score = list()
+            if rhyme:
+                score.append(op(rhyme))
+            if dissonance:
+                score.append(op(dissonance))
+            return op(score)
+
         output_dict = {
-            "rhyme_score": mean(mean(scores) for scores in all_scores),
-            "harmonic_rhyme_score": mean(harmonic_mean(scores) for scores in all_scores)
+            "rhyme_score": mean(mean(chain.from_iterable(scores.values())) for scores in all_scores),
+            "harmonic_rhyme_score": mean(hmean(chain.from_iterable(scores.values())) for scores in all_scores),
+            "balanced_rhyme_score": mean(reduce(scores['rhyme'], scores['dissonance'], mean) for scores in all_scores),
+            "balanced_harmonic_rhyme_score": mean(reduce(scores['rhyme'], scores['dissonance'], hmean) for scores in all_scores),
         }
         return output_dict
