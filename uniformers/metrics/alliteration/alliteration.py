@@ -54,7 +54,7 @@ class Alliteration(datasets.metric.Metric):
 
             if score < self.medium:
                 all_scores.append(float(level == "low"))
-            if score < self.high:
+            elif score < self.high:
                 all_scores.append(float(level == "medium"))
             else:
                 all_scores.append(float(level == "high"))

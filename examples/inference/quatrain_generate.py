@@ -113,7 +113,7 @@ def classify(quatrains, rhyme, meter, level, rhyme_model_name, meter_model_name,
         score = mean([alliteration_score(verse) for verse in phonemizer(quatrain)])
         if score < 0.05:
             scores.append(("low", {"low": Match.GOOD, "medium": Match.OK, "high": Match.BAD}[level]))
-        if score < 0.1:
+        elif score < 0.1:
             scores.append(("medium", {"low": Match.OK, "medium": Match.GOOD, "high": Match.OK}[level]))
         else:
             scores.append(("high", {"low": Match.BAD, "medium": Match.OK, "high": Match.GOOD}[level]))
