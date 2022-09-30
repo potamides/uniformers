@@ -239,6 +239,6 @@ if __name__ == "__main__":
 
         print("Alliteration level", f"{colored(*level)}:")
         for verse, scheme, (meter_label, meter_enum) in zip(quatrain, rhyme, meter):
-            print(verse.ljust(quatrain_width), colored(*scheme), colored(meter_label.ljust(quatrain_width), meter_enum))
+            print(verse.ljust(quatrain_width), colored(*scheme), colored(meter_label.ljust(meter_width), meter_enum))
         print()
 
