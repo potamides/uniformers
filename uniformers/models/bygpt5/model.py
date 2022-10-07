@@ -53,6 +53,11 @@ class ByGPT5Block(T5Block):
 
         self.layer.append(T5LayerFF(config))
 
+    def forward(self, *args, **kwargs):
+        outputs = super().forward(*args, **kwargs)
+        # hack: add dummy cross attention to prevent index error in T5Stack
+        return outputs + (None, None)
+
 
 class ByGPT5Stack(T5Stack):
     """
@@ -84,6 +89,12 @@ class ByGPT5Stack(T5Stack):
         self.device_map = None
         self.gradient_checkpointing = False
 
+    def forward(self, *args, **kwargs):
+        output = super().forward(*args, **kwargs)
+        # set cross attention to None, as it doesn't exist in our model
+        output.cross_attentions = None
+
+        return output
 
 class ByGPT5Model(ByGPT5Stack):
     model_type = "bygpt5"
