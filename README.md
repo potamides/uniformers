@@ -1,5 +1,7 @@
 # Uniformers
-**Uni**versal Coded Character Set Trans**formers** for Language Modelling.
+**Uni**versal Coded Character Set Trans**formers** for Language Modelling. An
+interactive demo is
+[available](https://colab.research.google.com/drive/1Ast-seDV6_pSzCvpGapNfTV_qDe0KRdF).
 
 ## Installation
 If you want to use this project as a library you can install it as a regular
@@ -17,8 +19,8 @@ pip install -e uniformers[examples]
 ## Pretrained Model Weights
 | ByGPT5 | Parameters | Status |
 |:-------|:-----------|:-------|
-| Small  | 73.5M      | WIP    |
-| Base   | 139.2M     | TODO   |
-| Medium | 289.1M     | TODO   |
+| Small  | 73.5M      | DONE   |
+| Base   | 139.2M     | DONE   |
+| Medium | 289.1M     | DONE   |
 | Large  | 873.0M     | TBD    |
 | XL     | 3.0B       | TBD    |
