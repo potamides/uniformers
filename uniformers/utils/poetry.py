@@ -64,16 +64,7 @@ def meter_to_label(meter, group_rare=True):
         case "iamb" | "iambic": meter = "iambus"
 
     # group rare meters to label "other"
-    if group_rare and meter in [
-        "asklepiade",
-        "pherekrateus",
-        "glykoneus",
-        "prosodiakos",
-        "hexameter",
-        "zehnsilber",
-        "spondee",
-        "diphilius",
-    ]:
+    if group_rare and meter in RARE_METERS:
         meter = "other"
 
     if meter in METERS if group_rare else ALL_METERS:
