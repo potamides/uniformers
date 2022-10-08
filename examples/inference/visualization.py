@@ -151,10 +151,10 @@ class Visualizer:
 
 
 if __name__ == "__main__":
-    sample_sequence = "</s><extra_id_18><extra_id_7><extra_id_1>When I consider how my light is spent,\nEre half my days, in this dark world and wide,\n And that one Talent which is death to hide\n Lodged with me useless, though my Soul more bent</s>"
+    sample_sequence = "</s><extra_id_18><extra_id_7><extra_id_1>When I consider how my light is spent,\nEre half my days, in this dark world and wide,\nAnd that one Talent which is death to hide\nLodged with me useless, though my Soul more bent</s>"
 
     parser = ArgumentParser(
-        description="Visualize input attribution for a given generated sequence. Currently only outputs HTML"
+        description="Visualize input attribution for a given generated sequence. Currently only outputs HTML."
     )
     parser.add_argument(
         "--model_name_or_path",
