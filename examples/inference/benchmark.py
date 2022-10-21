@@ -98,7 +98,7 @@ def benchmark_model(model, quatrain: Quatrain, number=1000):
     # the generation process so this should done sequentially. This is why we
     # use 'prefix_allowed_tokens_fn'.
     timer = benchmark.Timer(
-        stmt="model.generate(**input, pad_token_id=-1, prefix_allowed_tokens_fn=lambda *_: [next(labels)])",
+        stmt="model.generate(**input, pad_token_id=-1, max_length=384, prefix_allowed_tokens_fn=lambda *_: [next(labels)])",
         globals={
             "model": model.to("cuda"),
             "input": model_input.to("cuda"),
