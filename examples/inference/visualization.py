@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 from argparse import ArgumentParser
 from html import escape
+from itertools import takewhile
+from re import escape as regesc, sub
 
 from torch import cat, mean, norm
-from transformers.models.gpt2.modeling_gpt2 import GPT2LMHeadModel
 from transformers.models.auto.modeling_auto import AutoModelForCausalLM as AutoLM
 from transformers.models.auto.tokenization_auto import AutoTokenizer
+from transformers.models.gpt2.modeling_gpt2 import GPT2LMHeadModel
 
 from uniformers.models.bygpt5 import ByGPT5LMHeadModel, ByGPT5Tokenizer
 from uniformers.utils import Poetry2Tokens
@@ -15,6 +17,29 @@ from uniformers.vendor.alti import (
     normalize_contributions,
 )
 
+# https://stackoverflow.com/a/25875504
+def tex_escape(text):
+    """
+        :param text: a plain text message
+        :return: the message escaped to appear correctly in LaTeX
+    """
+    conv = {
+        '&': r'\&',
+        '%': r'\%',
+        '$': r'\$',
+        '#': r'\#',
+        '_': r'\_',
+        '{': r'\{',
+        '}': r'\}',
+        '~': r'\textasciitilde{}',
+        '^': r'\^{}',
+        '\\': r'\textbackslash{}',
+        '<': r'\textless{}',
+        '>': r'\textgreater{}',
+        '\n': r'\\',
+    }
+    regex = '|'.join(regesc(str(key)) for key in sorted(conv.keys(), key = lambda item: - len(item)))
+    return sub(regex, lambda m: conv[m.group()], text)
 
 class Visualizer:
     colormap = {
@@ -149,12 +174,51 @@ class Visualizer:
 
         return html
 
+    def tex(self, indeces, layer=-1):
+        tokens, colors, tex = self.tokens, self._tokens2rgb(indeces, layer), r"{\fboxsep0pt{}"
+
+        # heuristic: interpret zero attentions at end of sequence as not yet
+        # generated tokens for highlighting. Not perfect but works
+        for index in range(len(colors)):
+            if all(color == self.colormap[0.0] for color in colors[index:]):
+                position = index
+                break
+        else:
+            raise ValueError
+
+        if not self.keep_eos_bos:
+            tokens = tokens[1:-1]
+            colors = colors[1:-1]
+            position -= 1
+
+        # align verses (skip width of prompt of special tokens)
+        t2f = Poetry2Tokens(self.tokenizer).tokens2forms
+        special_style = r"{{\scriptsize\texttt{{<{}>}}}}"
+        prefix = [special_style.format(t2f[s]) for s in takewhile(lambda t: t in self.tokenizer.all_special_tokens, tokens)]
+        phantom = r"\underline{{\smash{{\hphantom{{{}}}}}}}".format("".join(prefix))
+
+        for index, (token, bg) in enumerate(zip(tokens, colors)):
+            if token.strip():
+                fg = self.get_fg(bg)
+                style = special_style if token in self.tokenizer.all_special_tokens else r"\textrm{{\textit{{{}}}}}"
+                weight=r"\textbf{{{}}}" if index >= position else "{}"
+                color = r"\colorbox[HTML]{{{bg}}}{{\textcolor{{{fg}}}{{\strut{{}}{text}}}}}"
+
+                if token in self.tokenizer.additional_special_tokens:
+                    token = t2f[token]
+
+                tex += color.format(fg=fg, bg=bg, text=style.format(weight.format(tex_escape(token))))
+            else:
+                tex += tex_escape(token).replace(r"\\", fr"\\{phantom}")
+
+        return tex + "}"
+
 
 if __name__ == "__main__":
     sample_sequence = "</s><extra_id_18><extra_id_7><extra_id_1>When I consider how my light is spent,\nEre half my days, in this dark world and wide,\nAnd that one Talent which is death to hide\nLodged with me useless, though my Soul more bent</s>"
 
     parser = ArgumentParser(
-        description="Visualize input attribution for a given generated sequence. Currently only outputs HTML."
+        description="Visualize input attribution for a given generated sequence. Supports HTML and TeX."
     )
     parser.add_argument(
         "--model_name_or_path",
@@ -196,10 +260,14 @@ if __name__ == "__main__":
         tokenizer = ByGPT5Tokenizer.from_pretrained(args.model_name_or_path)
 
     visualizer = Visualizer(model, tokenizer, args.sequence, alti=not args.raw)
-    markup = visualizer.html(indeces=args.indeces)
 
     if args.output:
         with open(args.output, "wb") as f:
-            f.write(markup.encode())
+            if args.output.endswith(".html"):
+                f.write(visualizer.html(indeces=args.indeces).encode())
+            elif args.output.endswith(".tex"):
+                f.write(visualizer.tex(indeces=args.indeces).encode())
+            else:
+                raise ValueError("Filetype not supported!")
     else:
-        print(markup)
+        print(visualizer.html(indeces=args.indeces))
