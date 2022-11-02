@@ -379,7 +379,8 @@ class PoetryLMTrainer(Trainer):
         if self.model.config.is_encoder_decoder:
             # add a start tensor so that eval code works (it expects a bos_token)
             start_tensor = full((len(generation_inputs), 1), self.model.config.decoder_start_token_id, device=self.args.device)
-            generated_tokens = cat((start_tensor, generation_inputs, generated_tokens), dim=1)
+            # and remove start-of-sequence token
+            generated_tokens = cat((start_tensor, generation_inputs, generated_tokens[:, 1:]), dim=1)
             pass
 
         return (None, generated_tokens, tensor([], device=self.args.device))
