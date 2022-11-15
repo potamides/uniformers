@@ -1,15 +1,14 @@
 from collections import ChainMap
-from statistics import mean
 from functools import cached_property, partial
 from os.path import isdir, isfile, join
 from random import randrange
+from statistics import mean
 
 from datasets import Value
 from datasets.load import load_metric
 from numpy import argmax, where, zeros
 from optuna.samplers import GridSampler
-from torch import Tensor
-from torch.nn.functional import sigmoid
+from torch import Tensor, sigmoid
 from transformers.models.auto.configuration_auto import AutoConfig
 from transformers.models.auto.modeling_auto import AutoModelForSequenceClassification
 from transformers.trainer import Trainer
