@@ -14,7 +14,7 @@ from transformers.utils.logging import (
 from transformers.models.auto.modeling_auto import AutoModelForSequenceClassification as AutoMFSC
 from transformers.models.auto.tokenization_auto import AutoTokenizer
 from uniformers.trainers import PoetryClassificationTrainer
-from uniformers.utils import METERS, RHYME_LABELS
+from uniformers.utils import METERS, RHYME_LABELS, EMOTIONS
 
 set_verbosity_info()
 enable_explicit_format()
@@ -22,8 +22,15 @@ logger = get_logger("transformers")
 set_seed(0)
 
 def model_init(name, task):
-    num_labels = len(METERS) if task == "meter" else len(RHYME_LABELS)
-    return lambda: AutoMFSC.from_pretrained(name, num_labels=num_labels)
+    kwargs = {
+        "problem_type": "multi_label_classification",
+        "num_labels": {
+            "meter": len(METERS),
+            "rhyme": len(RHYME_LABELS),
+            "emotion": len(EMOTIONS),
+        }[task],
+    }
+    return lambda: AutoMFSC.from_pretrained(name, **kwargs)
 
 def train(
     base_model,
@@ -71,7 +78,7 @@ if __name__ == "__main__":
     )
     argument_parser.add_argument(
         "--task",
-        choices=["rhyme", "meter"],
+        choices=["rhyme", "meter", "emotion"],
         default="meter",
         help="specify which task to train on",
     )

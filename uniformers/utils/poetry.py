@@ -46,6 +46,18 @@ RARE_METERS = (
 
 ALL_METERS = METERS + RARE_METERS
 
+EMOTIONS = (
+    'Annoyance',
+    'Awe/Sublime',
+    'Beauty/Joy',
+    'Humor',
+    #'Nostalgia',
+    'Sadness',
+    'Suspense',
+    'Uneasiness',
+    'Vitality'
+)
+
 
 def scheme_to_label(a, b, c, d):
     """Converts schemes in the form CCAD to AABC"""

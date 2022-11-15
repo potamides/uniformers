@@ -1,11 +1,15 @@
 from collections import ChainMap
+from statistics import mean
 from functools import cached_property, partial
 from os.path import isdir, isfile, join
 from random import randrange
 
+from datasets import Value
 from datasets.load import load_metric
-from numpy import argmax
+from numpy import argmax, where, zeros
 from optuna.samplers import GridSampler
+from torch import Tensor
+from torch.nn.functional import sigmoid
 from transformers.models.auto.configuration_auto import AutoConfig
 from transformers.models.auto.modeling_auto import AutoModelForSequenceClassification
 from transformers.trainer import Trainer
@@ -20,15 +24,25 @@ from .training_args import GlobalBatchTrainingArguments
 logger = logging.get_logger("transformers")
 
 
-def _tokenize(examples, tokenizer):
+def _preprocess_data(examples, tokenizer, label_info):
     if type(examples['text'][0]) == str:
         logger.debug("Tokenizing single sentences.")
-        return tokenizer([clean_sentence(t, l) for t, l in zip(examples['text'], examples['language'])], truncation=True)
-    logger.debug("Tokenizing sentence pairs.")
-    sentences1, sentences2, languages = *zip(*examples["text"]), examples['language']
-    sentences1 = [clean_sentence(s, l) for s, l in zip(sentences1, languages)]
-    sentences2 = [clean_sentence(s, l) for s, l in zip(sentences2, languages)]
-    return tokenizer(sentences1, sentences2, truncation=True)
+        tokenized = tokenizer([clean_sentence(t, l) for t, l in zip(examples['text'], examples['language'])], truncation=True)
+    else:
+        logger.debug("Tokenizing sentence pairs.")
+        sentences1, sentences2, languages = *zip(*examples["text"]), examples['language']
+        sentences1 = [clean_sentence(s, l) for s, l in zip(sentences1, languages)]
+        sentences2 = [clean_sentence(s, l) for s, l in zip(sentences2, languages)]
+        tokenized = tokenizer(sentences1, sentences2, truncation=True)
+
+    if isinstance(examples["labels"][0], list):
+        logger.debug("Transforming labels for multi-label classification.")
+        labels_matrix = zeros((len(examples['labels']), label_info.feature.num_classes))
+        for idx, labels in enumerate(examples['labels']):
+          labels_matrix[idx, labels] = 1
+        tokenized["labels"] = labels_matrix.tolist()
+
+    return tokenized
 
 
 class PoetryClassificationTrainer(Trainer):
@@ -50,15 +64,18 @@ class PoetryClassificationTrainer(Trainer):
         test_run=False,
         **kwargs,
     ):
-
+        assert task in ["meter", "rhyme", "emotion"]
         self.tokenizer = tokenizer
-
         self.metrics = {
             "precision": partial(load_metric("precision").compute, average="macro", zero_division=0),
             "recall": partial(load_metric("recall").compute, average="macro", zero_division=0),
             "f1": partial(load_metric("f1").compute, average="macro"),
             "accuracy": load_metric("accuracy").compute
         }
+
+        if task == "emotion": # metrics don't work for mutli-label classification out of the box
+            for metric, func in self.metrics.items():
+                self.metrics[metric] = partial(self._multi_class_metric_wrapper, func=func)
 
         # interesting resource: https://huggingface.co/course/chapter7/6?fw=pt
         self.args = GlobalBatchTrainingArguments(
@@ -96,30 +113,54 @@ class PoetryClassificationTrainer(Trainer):
             **kwargs,
         )
 
-    def compute_metrics(self, p):
-        preds = p.predictions[0] if isinstance(p.predictions, tuple) else p.predictions
-        preds = argmax(preds, axis=1)
+    def _multi_class_metric_wrapper(self, predictions, references, func):
+        name, vals = str(), list()
+        for class_preds, class_refs in zip(predictions.T, references.T):
+            name, val = list(func(predictions=class_preds, references=class_refs).items())[0]
+            vals.append(val)
+        return {name: mean(vals)}
+
+    def compute_metrics(self, p, threshold=0.5):
+        probs = p.predictions[0] if isinstance(p.predictions, tuple) else p.predictions
+        if self.model.config.problem_type == "multi_label_classification":
+            probs = sigmoid(Tensor(probs))
+            preds = zeros(probs.shape)
+            preds[where(probs >= threshold)] = 1
+        else:
+            preds = argmax(probs, axis=1)
         return dict(ChainMap(*[func(predictions=preds, references=p.label_ids) for func in self.metrics.values()]))
 
     def load_dataset(self, task):
         self._num_samples = 0
-        raw_dataset = load_dataset("poetrain", task, split="train")
+        if task == "emotion":
+            raw_dataset = load_dataset("poemo", lang="de", split="train")
+        else:
+            raw_dataset = load_dataset("poetrain", task, split="train")
+
         tokenized_dataset = raw_dataset.map(
-            _tokenize,
+            _preprocess_data,
             batched=True,
             #remove_columns=raw_dataset.column_names,  # pyright: ignore
-            fn_kwargs = {"tokenizer": self.tokenizer} # pyright: ignore
+            fn_kwargs = {  # pyright: ignore
+                "tokenizer": self.tokenizer,
+                "label_info": raw_dataset.features['labels'] # pyright: ignore
+                }
         )
 
+        if task == "emotion": # multi-label classification needs float labels
+            new_features = tokenized_dataset.features.copy() # pyright: ignore
+            new_features['labels'].feature = Value("float64")
+            tokenized_dataset = tokenized_dataset.cast(new_features)
+
         train_dataset, tmp_dataset = tokenized_dataset.train_test_split( # pyright: ignore
-            test_size=0.1, stratify_by_column="labels"
+            test_size=0.1, stratify_by_column=None if task == "emotion" else "labels"
         ).values()
         eval_dataset, test_dataset = tmp_dataset.train_test_split(
-            test_size=0.5, stratify_by_column="labels"
+            test_size=0.5, stratify_by_column=None if task == "emotion" else "labels"
         ).values()
 
         index = randrange(len(train_dataset))
-        sample = train_dataset[index := randrange(len(train_dataset))]['input_ids']
+        sample = train_dataset[index := randrange(len(train_dataset))]['input_ids'] # pyright: ignore
         detokenized = self.tokenizer.decode(sample)
         logger.info(f"Sample {index} of the training set: {sample}")
         logger.info(f"Sample {index} of the training set (detokenized): {detokenized}")
