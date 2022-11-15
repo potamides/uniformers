@@ -2,7 +2,6 @@ from collections import ChainMap
 from functools import cached_property, partial
 from os.path import isdir, isfile, join
 from random import randrange
-from statistics import mean
 
 from datasets import Value
 from datasets.load import load_metric
@@ -66,15 +65,14 @@ class PoetryClassificationTrainer(Trainer):
         assert task in ["meter", "rhyme", "emotion"]
         self.tokenizer = tokenizer
         self.metrics = {
-            "precision": partial(load_metric("precision").compute, average="macro", zero_division=0),
-            "recall": partial(load_metric("recall").compute, average="macro", zero_division=0),
-            "f1": partial(load_metric("f1").compute, average="macro"),
-            "accuracy": load_metric("accuracy").compute
+            # FIXME: uses _compute instead of compute since the latter doesn't
+            # work with multi-label classification. should use sklearn directly
+            # instead
+            "precision": partial(load_metric("precision")._compute, average="macro", zero_division=0),
+            "recall": partial(load_metric("recall")._compute, average="macro", zero_division=0),
+            "f1": partial(load_metric("f1")._compute, average="macro"),
+            "accuracy": load_metric("accuracy")._compute
         }
-
-        if task == "emotion": # metrics don't work for mutli-label classification out of the box
-            for metric, func in self.metrics.items():
-                self.metrics[metric] = partial(self._multi_class_metric_wrapper, func=func)
 
         # interesting resource: https://huggingface.co/course/chapter7/6?fw=pt
         self.args = GlobalBatchTrainingArguments(
@@ -112,13 +110,6 @@ class PoetryClassificationTrainer(Trainer):
             **kwargs,
         )
 
-    def _multi_class_metric_wrapper(self, predictions, references, func):
-        name, vals = str(), list()
-        for class_preds, class_refs in zip(predictions.T, references.T):
-            name, val = list(func(predictions=class_preds, references=class_refs).items())[0]
-            vals.append(val)
-        return {name: mean(vals)}
-
     def compute_metrics(self, p, threshold=0.5):
         probs = p.predictions[0] if isinstance(p.predictions, tuple) else p.predictions
         if self.model.config.problem_type == "multi_label_classification":
@@ -132,6 +123,7 @@ class PoetryClassificationTrainer(Trainer):
     def load_dataset(self, task):
         self._num_samples = 0
         if task == "emotion":
+            # FIXME: proper class option for single or multilingual training
             raw_dataset = load_dataset("poemo", lang="de", split="train")
         else:
             raw_dataset = load_dataset("poetrain", task, split="train")
@@ -212,10 +204,13 @@ class PoetryClassificationTrainer(Trainer):
         logger.info("Testing model.")
         ds = self.test_dataset
         all_metrics = self.evaluate(eval_dataset=ds)
-        de_metrics = self.evaluate(eval_dataset=ds.filter(lambda example: example["language"] == "de"))
-        en_metrics = self.evaluate(eval_dataset=ds.filter(lambda example: example["language"] == "en"))
 
-        for name, metrics in zip(["test", "test-de", "test-en"], [all_metrics, de_metrics, en_metrics]):
+        lang_metrics = dict()
+        if len(langs := sorted(set(ds['language']))) > 1:
+            for lang in langs:
+                lang_metrics[lang] = self.evaluate(eval_dataset=ds.filter(lambda example: example["language"] == lang))
+
+        for name, metrics in zip(["test"] + [f"test-{l}" for l in lang_metrics.keys()], [all_metrics] + list(lang_metrics.values())):
             metrics = {key.replace("eval", "test"): value for key, value in metrics.items()}
             self.log_metrics(name, metrics)
             if save_metrics:
