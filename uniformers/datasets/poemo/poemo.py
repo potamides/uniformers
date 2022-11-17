@@ -90,7 +90,7 @@ class POMEO(datasets.builder.GeneratorBasedBuilder):
                         all_labels.append(sorted([label for label in labels if label != "NONE"]))
 
         for idx, (verse, label) in enumerate(zip(all_verses, all_labels)):
-            label = [l.replace(" / ", "/") for l in label if l != "Nostalgia"]
+            label = [l_new for l in label if (l_new := l.replace(" / ", "/")) in EMOTIONS]
             assert len(label) > 0
             yield (
                 idx,
