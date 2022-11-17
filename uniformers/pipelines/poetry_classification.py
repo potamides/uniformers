@@ -9,7 +9,7 @@ from transformers.models.auto.modeling_auto import AutoModelForSequenceClassific
 from transformers.models.auto.tokenization_auto import AutoTokenizer
 from transformers.pipelines.text_classification import TextClassificationPipeline
 
-from uniformers.utils.poetry import METERS, RHYME_LABELS
+from uniformers.utils.poetry import METERS, RHYME_LABELS, EMOTIONS
 from uniformers.utils.clean import clean_sentence
 
 
@@ -82,3 +82,20 @@ class MeterClassificationPipeline(_AbstractPoetryClassificationPipeline):
             for verse in ([sents] if isinstance(sents, str) else sents)
         ]
         return super().classify(cleaned)
+
+class EmotionClassificationPipeline(_AbstractPoetryClassificationPipeline):
+    def __init__(self, lang="de", model_name="nllg/clf-bert-e", threshold=0.5, **kwargs):
+        super().__init__(lang=lang, model_name=model_name, labels=EMOTIONS, top_k=None, **kwargs)
+        self.threshold = threshold
+
+    def classify(self, sents: str | List[str]):
+        cleaned = [
+            clean_sentence(verse, lang=self.lang)
+            for verse in ([sents] if isinstance(sents, str) else sents)
+        ]
+        classified_sents = super().classify(cleaned)
+        for classified_sent in classified_sents:
+            for label in classified_sent:
+                label['predicted'] = label['score'] >= self.threshold
+
+        return classified_sents
