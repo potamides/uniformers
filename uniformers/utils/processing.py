@@ -62,6 +62,19 @@ def process_rhymes(examples, clf_rhyme):
     examples["rhyme"] = schemes
     return examples
 
+def process_emotions(examples, clf_emotion):
+    unique = list(set(chain.from_iterable(examples["text"])))
+    verse2emotion = dict(zip(unique, clf_emotion(unique)))
+
+    all_emotions = list()
+    for quatrain in examples["text"]:
+        emotions = sorted({emotion['label'] for verse in quatrain for emotion in verse2emotion[verse] if emotion['predicted']})
+        # at least one emotion, else discard
+        if emotions:
+            all_emotions.append(emotions)
+
+    examples["emotion"] = all_emotions
+    return examples
 
 class QuatrainProcessing:
     def __init__(self, lang, meter_model_name, rhyme_model_name, batch_size=1):
@@ -93,4 +106,22 @@ class QuatrainProcessing:
         examples = process_rhymes(examples, self.clf_rhyme)
         examples = process_meters(examples, self.clf_meter)
         examples = process_alliterations(examples, self.phonemizer)
+        return examples
+
+
+class EmotionProcessing:
+    def __init__(self, lang, emotion_model_name, batch_size=1):
+        self.lang = lang
+        self.emotion = emotion_model_name
+        self.bs = batch_size
+
+    @cached_property
+    def clf_emotion(self):
+        from uniformers.pipelines import  EmotionClassificationPipeline
+        return EmotionClassificationPipeline(
+            lang=self.lang, batch_size=self.bs, model_name=self.emotion
+        )
+
+    def __call__(self, examples):
+        examples = process_emotions(examples, self.clf_emotion)
         return examples
