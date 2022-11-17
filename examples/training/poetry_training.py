@@ -18,7 +18,7 @@ from transformers.utils.logging import (
 )
 
 from uniformers.models.bygpt5 import ByGPT5LMHeadModel, ByGPT5Tokenizer
-from uniformers.trainers import PoetryLMTrainer
+from uniformers.trainers import PoetryEmotionLMTrainer, PoetryLMTrainer
 
 set_verbosity_info()
 enable_explicit_format()
@@ -43,22 +43,30 @@ def train(
     lang="en",
     meter_model_name_or_path="nllg/clf-canine-m",
     rhyme_model_name_or_path="nllg/clf-canine-r",
+    emotion_model_name_or_path="nllg/clf-bert-e",
     coherence_model_name_or_path="bert-base-multilingual-cased",
     gradient_accumulation_steps=8,
     gradient_checkpointing=False,
     test_run=False,
+    emotion=False,
     do_test=True
 ):
+    poetry_models = {
+        "meter_model_name_or_path": meter_model_name_or_path,
+        "rhyme_model_name_or_path": rhyme_model_name_or_path,
+        "coherence_model_name_or_path": coherence_model_name_or_path
+    }
+    emotion_models = {
+        "emotion_model_name_or_path": emotion_model_name_or_path,
+    }
     Trainer = partial(
-        PoetryLMTrainer,
+        PoetryEmotionLMTrainer if emotion else PoetryLMTrainer,
         output_dir=output_dir,
         lang=lang,
-        meter_model_name_or_path=meter_model_name_or_path,
-        rhyme_model_name_or_path=rhyme_model_name_or_path,
-        coherence_model_name_or_path=coherence_model_name_or_path,
         gradient_accumulation_steps=gradient_accumulation_steps,
         gradient_checkpointing=gradient_checkpointing,
         test_run=test_run,
+        **(emotion_models if emotion else poetry_models),
     )
     try:
         model, tokenizer = try_load(output_dir)
@@ -97,6 +105,11 @@ if __name__ == "__main__":
         help="name or path of the rhyme classification model",
     )
     argument_parser.add_argument(
+        "--emotion_model_name_or_path",
+        default="nllg/clf-bert-e",
+        help="name or path of the emotion classification model",
+    )
+    argument_parser.add_argument(
         "--coherence_model_name_or_path",
         default="bert-base-multilingual-cased",
         help="name or path of the coherence model (for BERT NSP)",
@@ -113,7 +126,6 @@ if __name__ == "__main__":
     argument_parser.add_argument(
         "--lang",
         choices=["en", "de"],
-        default="en",
         help="specify which language to train on",
     )
     argument_parser.add_argument(
@@ -127,6 +139,11 @@ if __name__ == "__main__":
         action="store_true",
         help="perform a test run on debug verbosity",
     )
+    argument_parser.add_argument(
+        "--emotion",
+        action="store_true",
+        help="train conditioned on emotion, not poetic devices",
+    )
     args = argument_parser.parse_args()
 
     if args.debug:
@@ -138,8 +155,10 @@ if __name__ == "__main__":
         join(args.out_dir, args.out_name or basename(args.model_name_or_path), args.lang),
         meter_model_name_or_path=args.meter_model_name_or_path,
         rhyme_model_name_or_path=args.rhyme_model_name_or_path,
+        emotion_model_name_or_path=args.emotion_model_name_or_path,
         coherence_model_name_or_path=args.coherence_model_name_or_path,
         lang=args.lang,
         gradient_accumulation_steps=args.grad_acc_steps,
+        emotion=args.emotion,
         test_run=args.debug,
     )
