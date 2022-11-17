@@ -123,10 +123,12 @@ class AbstractPoetryLMTrainer(Trainer, ABC):
         gradient_accumulation_steps=1,
         gradient_checkpointing=False,
         test_run=False,
+        **trainer_args
     ):
 
         self.model = model
         self.tokenizer = tokenizer
+        self.trainer_args = trainer_args
         self.patch_tokenizer()
 
         if self.parameters < 280 * 10**6:
@@ -311,6 +313,7 @@ class PoetryLMTrainer(AbstractPoetryLMTrainer):
         lang="en",
         batch_size=128,
         test_run=False,
+        low_resource=False,
         **kwargs,
     ):
         super().__init__(
@@ -332,6 +335,7 @@ class PoetryLMTrainer(AbstractPoetryLMTrainer):
             rhyme_model_name_or_path,
             batch_size,
             test_run,
+            low_resource
         )
 
         super(AbstractPoetryLMTrainer, self).__init__(
@@ -351,7 +355,7 @@ class PoetryLMTrainer(AbstractPoetryLMTrainer):
                 coherence_model_name_or_path,
                 batch_size,
             ),
-            **kwargs,
+            **self.trainer_args,
         )
 
     def compute_metrics(self, lang, medium, high, meter_model, rhyme_model, coherence_model, bs, p):
@@ -392,7 +396,7 @@ class PoetryLMTrainer(AbstractPoetryLMTrainer):
             self.tokenizer.add_special_tokens(special) # pyright: ignore
             self.model.resize_token_embeddings(len(self.tokenizer))
 
-    def load_dataset(self, lang, meter_model, rhyme_model, bs, test):
+    def load_dataset(self, lang, meter_model, rhyme_model, bs, test, low_res):
         raw_dataset = load_dataset(
             "quatrain", lang=lang, split="train" + ("[:20000]" if test else "")
         )
@@ -417,6 +421,9 @@ class PoetryLMTrainer(AbstractPoetryLMTrainer):
                 "is_encoder_decoder": self.model.config.is_encoder_decoder,
             },
         )
+
+        if low_res: # use only 1/20 of training dataset
+            tokenized_dataset, _ = tokenized_dataset.train_test_split(test_size=0.95).values() # pyright: ignore
 
         index = randrange(len(tokenized_dataset))
         sample = tokenized_dataset[index]
@@ -453,6 +460,7 @@ class PoetryEmotionLMTrainer(AbstractPoetryLMTrainer):
         lang="de",
         batch_size=128,
         test_run=False,
+        low_resource=False,
         **kwargs,
     ):
 
@@ -477,6 +485,7 @@ class PoetryEmotionLMTrainer(AbstractPoetryLMTrainer):
             emotion_model_name_or_path,
             batch_size,
             test_run,
+            low_resource
         )
 
         super(AbstractPoetryLMTrainer, self).__init__(
@@ -492,7 +501,7 @@ class PoetryEmotionLMTrainer(AbstractPoetryLMTrainer):
                 emotion_model_name_or_path,
                 batch_size,
             ),
-            **kwargs,
+            **self.trainer_args,
         )
 
     def compute_metrics(self, lang, emotion_model, bs, p):
@@ -525,7 +534,7 @@ class PoetryEmotionLMTrainer(AbstractPoetryLMTrainer):
             self.tokenizer.add_special_tokens(special) # pyright: ignore
             self.model.resize_token_embeddings(len(self.tokenizer))
 
-    def load_dataset(self, lang, emotion_model, bs, test):
+    def load_dataset(self, lang, emotion_model, bs, test, low_res):
         raw_dataset = load_dataset(
             "quatrain", lang=lang, split="train" + ("[:20000]" if test else "")
         )
@@ -548,6 +557,9 @@ class PoetryEmotionLMTrainer(AbstractPoetryLMTrainer):
                 "is_encoder_decoder": self.model.config.is_encoder_decoder,
             },
         )
+
+        if low_res: # use only 1/20 of training dataset
+            tokenized_dataset, _ = tokenized_dataset.train_test_split(test_size=0.95).values() # pyright: ignore
 
         index = randrange(len(tokenized_dataset))
         sample = tokenized_dataset[index]

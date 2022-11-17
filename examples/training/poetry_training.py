@@ -49,7 +49,8 @@ def train(
     gradient_checkpointing=False,
     test_run=False,
     emotion=False,
-    do_test=True
+    do_test=True,
+    low_resource=False
 ):
     poetry_models = {
         "meter_model_name_or_path": meter_model_name_or_path,
@@ -66,6 +67,7 @@ def train(
         gradient_accumulation_steps=gradient_accumulation_steps,
         gradient_checkpointing=gradient_checkpointing,
         test_run=test_run,
+        low_resource=low_resource,
         **(emotion_models if emotion else poetry_models),
     )
     try:
@@ -144,6 +146,12 @@ if __name__ == "__main__":
         action="store_true",
         help="train conditioned on emotion, not poetic devices",
     )
+    argument_parser.add_argument(
+        "--low_resource",
+        action="store_true",
+        help="perform a low resource training run",
+    )
+
     args = argument_parser.parse_args()
 
     if args.debug:
@@ -161,4 +169,5 @@ if __name__ == "__main__":
         gradient_accumulation_steps=args.grad_acc_steps,
         emotion=args.emotion,
         test_run=args.debug,
+        low_resource=args.low_resource
     )
