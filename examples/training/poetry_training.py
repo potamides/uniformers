@@ -72,11 +72,11 @@ def train(
     )
     try:
         model, tokenizer = try_load(output_dir)
-        trainer = Trainer(model, tokenizer)
+        trainer = Trainer(model=model, tokenizer=tokenizer)
         logger.info(f"Model already trained. Skipping training.")
     except EnvironmentError:
         model, tokenizer = try_load(base_model)
-        trainer = Trainer(model, tokenizer)
+        trainer = Trainer(model=model, tokenizer=tokenizer)
         trainer.train()
         trainer.save_model()
         trainer.save_state()
