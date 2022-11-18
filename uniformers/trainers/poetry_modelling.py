@@ -76,7 +76,7 @@ def _tokenize(examples, p2t, lang, medium, high, is_encoder_decoder=False):
 
 def _emotion_tokenize(examples, lang, tokenizer, e2t, is_encoder_decoder=False):
     inputs, labels = list(), list()
-    for text, emotion in zip(*[examples[cat] for cat in ["text", "emotion"]]):  # pyright: ignore
+    for text, emotion in zip(examples["text"], examples["emotion"]):
         clean_text = "\n".join(clean_sentence(verse, lang, remove_punct=["="]) for verse in text)  # pyright: ignore
         inputs.append("".join(e2t[e] for e in sorted(emotion)))
         labels.append(clean_text)
@@ -511,7 +511,7 @@ class PoetryEmotionLMTrainer(AbstractPoetryLMTrainer):
         for idx, pred in enumerate(preds):
             tokenized, emotion = self.tokenizer.tokenize(pred)[1:], list()
             for token in tokenized:
-                if token in self.tokenizer.all_special_tokens:
+                if token in self.tokens2emotions:
                     emotion.append(self.tokens2emotions[token])
                 else:
                     break
@@ -520,7 +520,7 @@ class PoetryEmotionLMTrainer(AbstractPoetryLMTrainer):
 
         emotion_scores = load_metric(
             "emotion", language=lang, batch_size=bs, model_name=emotion_model
-        ).compute(quatrains=preds, emotion=emotions)
+        ).compute(quatrains=preds, emotions=emotions)
 
         return emotion_scores or {}
 

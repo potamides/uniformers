@@ -60,7 +60,6 @@ class Emotion(datasets.metric.Metric):
                 for result in verse_results:
                     if (label := result['label']) in emotion:
                         scores[label] = max(result['score'], scores[label])
-                        break
             assert len(scores) == len(emotion)
             all_scores.append(list(scores.values()))
 

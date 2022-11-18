@@ -67,11 +67,14 @@ def process_emotions(examples, clf_emotion):
     verse2emotion = dict(zip(unique, clf_emotion(unique)))
 
     all_emotions = list()
-    for quatrain in examples["text"]:
+    for idx, quatrain in reversed(list(enumerate(examples["text"]))):
         emotions = sorted({emotion['label'] for verse in quatrain for emotion in verse2emotion[verse] if emotion['predicted']})
         # at least one emotion, else discard
         if emotions:
-            all_emotions.append(emotions)
+            all_emotions.insert(0, emotions)
+        else:
+            for value in examples.values():
+                value.pop(idx)
 
     examples["emotion"] = all_emotions
     return examples
