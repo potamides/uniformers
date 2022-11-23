@@ -329,7 +329,7 @@ class PoetryLMTrainer(AbstractPoetryLMTrainer):
         else:
             data_collator = DataCollatorForLanguageModeling(self.tokenizer, mlm=False)
 
-        train_data, eval_data, medium, high = self.load_dataset(
+        train_data, tokenized_data, eval_data, medium, high = self.load_dataset(
             lang,
             meter_model_name_or_path,
             rhyme_model_name_or_path,
@@ -343,10 +343,11 @@ class PoetryLMTrainer(AbstractPoetryLMTrainer):
             tokenizer=self.tokenizer,
             args=self.args,
             data_collator=data_collator,
-            train_dataset=train_data,  # pyright: ignore
+            train_dataset=tokenized_data,  # pyright: ignore
             eval_dataset=eval_data,  # pyright: ignore
             compute_metrics=partial(
                 self.compute_metrics,
+                train_data,
                 lang,
                 medium,
                 high,
@@ -358,7 +359,7 @@ class PoetryLMTrainer(AbstractPoetryLMTrainer):
             **self.trainer_args,
         )
 
-    def compute_metrics(self, lang, medium, high, meter_model, rhyme_model, coherence_model, bs, p):
+    def compute_metrics(self, train_data, lang, medium, high, meter_model, rhyme_model, coherence_model, bs, p):
         preds = super().compute_metrics(p)
         p2t = Poetry2Tokens(self.tokenizer)
         rhymes, meters, allits = list(), list(), list()
@@ -382,8 +383,11 @@ class PoetryLMTrainer(AbstractPoetryLMTrainer):
         coherence_scores = load_metric(
             "coherence", batch_size=bs, model_name=coherence_model
         ).compute(quatrains=preds)
+        copying_scores = load_metric(
+            "copying", train_data=train_data,
+        ).compute(quatrains=preds, schemes=rhymes, meters=meters, levels=allits)
 
-        return rhyme_scores | meter_scores | allit_scores | coherence_scores  # pyright: ignore
+        return rhyme_scores | meter_scores | allit_scores | coherence_scores  | copying_scores # pyright: ignore
 
     def patch_tokenizer(self):
         super().patch_tokenizer()
@@ -449,7 +453,7 @@ class PoetryLMTrainer(AbstractPoetryLMTrainer):
                 break
         tokenized_eval_dataset = Dataset.from_dict(self.tokenizer(eval_dataset, add_special_tokens=False))  # pyright: ignore
 
-        return tokenized_dataset, tokenized_eval_dataset, medium, high
+        return dataset, tokenized_dataset, tokenized_eval_dataset, medium, high
 
 
 class PoetryEmotionLMTrainer(AbstractPoetryLMTrainer):
