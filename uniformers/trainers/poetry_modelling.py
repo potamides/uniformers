@@ -46,16 +46,9 @@ def _add_special_tokens(tokenizer, texts):
     return [bos + text + eos for text in texts]
 
 
-def _tokenize(examples, p2t, lang, medium, high, is_encoder_decoder=False):
+def _tokenize(examples, p2t, lang, is_encoder_decoder=False):
     inputs, labels, cats = list(), list(), ("text", "rhyme", "meter", "alliteration")
-    for text, rhyme, meter, score in zip(*[examples[cat] for cat in cats]):  # pyright: ignore
-        if score < medium:
-            alliteration = "low"
-        if score < high:
-            alliteration = "medium"
-        else:
-            alliteration = "high"
-
+    for text, rhyme, meter, alliteration in zip(*[examples[cat] for cat in cats]):  # pyright: ignore
         rhyme_token = p2t.rhymes2tokens[rhyme]
         meter_token = p2t.meters2tokens[meter]
         allit_token = p2t.alliterations2tokens[alliteration]
@@ -383,11 +376,11 @@ class PoetryLMTrainer(AbstractPoetryLMTrainer):
         coherence_scores = load_metric(
             "coherence", batch_size=bs, model_name=coherence_model
         ).compute(quatrains=preds)
-        copying_scores = load_metric(
-            "copying", train_data=train_data,
+        memorization_scores = load_metric(
+            "memorization", train_data=train_data,
         ).compute(quatrains=preds, schemes=rhymes, meters=meters, levels=allits)
 
-        return rhyme_scores | meter_scores | allit_scores | coherence_scores  | copying_scores # pyright: ignore
+        return rhyme_scores | meter_scores | allit_scores | coherence_scores  | memorization_scores # pyright: ignore
 
     def patch_tokenizer(self):
         super().patch_tokenizer()
@@ -404,6 +397,8 @@ class PoetryLMTrainer(AbstractPoetryLMTrainer):
         raw_dataset = load_dataset(
             "quatrain", lang=lang, split="train" + ("[:20000]" if test else "")
         )
+
+        medium, high = 0.05, 0.1  # empirically determined alliteration thresholds
         dataset = raw_dataset.map(
             QuatrainProcessing(
                 lang=lang,
@@ -412,6 +407,9 @@ class PoetryLMTrainer(AbstractPoetryLMTrainer):
                 batch_size=bs,
             ),
             batched=True,
+        ).map(lambda ex: ex | {
+                "alliteration": ["high", "medium", "low"][(ex["alliteration"] < medium) + (ex["alliteration"] < high)]
+            }
         )
 
         tokenized_dataset = dataset.map(
@@ -420,8 +418,6 @@ class PoetryLMTrainer(AbstractPoetryLMTrainer):
             fn_kwargs={  # pyright: ignore
                 "lang": lang,
                 "p2t": (p2t := Poetry2Tokens(self.tokenizer)),
-                "medium": (medium := 0.05),
-                "high": (high := 0.1),
                 "is_encoder_decoder": self.model.config.is_encoder_decoder,
             },
         )
