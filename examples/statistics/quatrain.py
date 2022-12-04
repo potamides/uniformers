@@ -41,7 +41,7 @@ def quatrain_stats(lang, args):
     for allit_level, range_ in stats['alliteration'].items():
         print(f"  Alliteration ({allit_level}) range: {range_}")
 
-    return stats
+    return stats, dataset
 
 
 if __name__ == "__main__":
@@ -51,7 +51,7 @@ if __name__ == "__main__":
     argument_parser.add_argument(
         "--out_dir",
         default="data",
-        help="directory where to write the json file with results",
+        help="directory where to write the json files with results",
     )
     argument_parser.add_argument(
         "--meter_model_name_or_path",
@@ -72,7 +72,9 @@ if __name__ == "__main__":
 
     args = argument_parser.parse_args()
     makedirs(args.out_dir, exist_ok=True)
-    with open(
-        join(args.out_dir, f"quatrain-statistics.json"), "w"
-    ) as fp:
-        dump({"de": quatrain_stats("de", args), "en": quatrain_stats("en", args)}, fp)
+    with open(join(args.out_dir, f"quatrain-statistics.json"), "w") as fp:
+        de_stats, de_dataset = quatrain_stats("de", args)
+        en_stats, en_dataset = quatrain_stats("en", args)
+        dump({"de": de_stats, "en": en_stats}, fp)
+        de_dataset.to_json(join(args.out_dir, "QuaTrain-de.json"))
+        en_dataset.to_json(join(args.out_dir, "QuaTrain-en.json"))
