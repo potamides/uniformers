@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 from argparse import ArgumentParser
 from html import escape
-from itertools import takewhile
 from re import escape as regesc, sub
+from textwrap import dedent
 
 from torch import cat, mean, norm
 from transformers.models.auto.modeling_auto import AutoModelForCausalLM as AutoLM
@@ -175,7 +175,27 @@ class Visualizer:
         return html
 
     def tex(self, indeces, layer=-1):
-        tokens, colors, tex = self.tokens, self._tokens2rgb(indeces, layer), r"{\fboxsep0pt{}"
+        tokens, colors, verses = self.tokens, self._tokens2rgb(indeces, layer), ""
+        special, t2f = list(), Poetry2Tokens(self.tokenizer).tokens2forms
+        special_style = r"{{\texttt{{<{}>}}}}"
+        color = r"\colorbox[HTML]{{{bg}}}{{\textcolor{{{fg}}}{{\strut{{}}{text}}}}}"
+        tex = dedent(
+            r"""
+            \ifx\versesize\undefined\def\versesize{{\normalsize}}\fi%
+            \ifx\stylesize\undefined\def\stylesize{{\small}}\fi%
+            {{\versesize\fboxsep0pt{{}}
+              \begin{{tabular}}{{cl}}
+                \multirow{{4}}{{*}}{{\stylesize\makecell{{{special}}}}}
+                & {verse1}\\
+                & {verse2}\\
+                & {verse3}\\
+                & {verse4}
+              \end{{tabular}}
+            }}%
+            \global\let\stylesize\undefined%
+            \global\let\versesize\undefined%
+            """
+        )
 
         # heuristic: interpret zero attentions at end of sequence as not yet
         # generated tokens for highlighting. Not perfect but works
@@ -191,27 +211,22 @@ class Visualizer:
             colors = colors[1:-1]
             position -= 1
 
-        # align verses (skip width of prompt of special tokens)
-        t2f = Poetry2Tokens(self.tokenizer).tokens2forms
-        special_style = r"{{\scriptsize\texttt{{<{}>}}}}"
-        prefix = [special_style.format(t2f[s]) for s in takewhile(lambda t: t in self.tokenizer.all_special_tokens, tokens)]
-        phantom = r"\underline{{\smash{{\hphantom{{{}}}}}}}".format("".join(prefix))
-
         for index, (token, bg) in enumerate(zip(tokens, colors)):
             if token.strip():
                 fg = self.get_fg(bg)
                 style = special_style if token in self.tokenizer.all_special_tokens else r"\textrm{{\textit{{{}}}}}"
                 weight=r"\textbf{{{}}}" if index >= position else "{}"
-                color = r"\colorbox[HTML]{{{bg}}}{{\textcolor{{{fg}}}{{\strut{{}}{text}}}}}"
 
                 if token in self.tokenizer.additional_special_tokens:
                     token = t2f[token]
-
-                tex += color.format(fg=fg, bg=bg, text=style.format(weight.format(tex_escape(token))))
+                    special.append(color.format(fg=fg, bg=bg, text=style.format(weight.format(tex_escape(token)))))
+                else:
+                    verses += color.format(fg=fg, bg=bg, text=style.format(weight.format(tex_escape(token))))
             else:
-                tex += tex_escape(token).replace(r"\\", fr"\\{phantom}")
+                verses += tex_escape(token)
+        verses = verses.split(r"\\")
 
-        return tex + "}"
+        return tex.format(special=r"\\".join(special), verse1=verses[0], verse2=verses[1], verse3=verses[2], verse4=verses[3])
 
 
 if __name__ == "__main__":
