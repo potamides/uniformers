@@ -1,0 +1,24 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Belouadi"
+  given-names: "Jonas"
+title: "Uniformers"
+url: "https://github.com/potamides/uniformers"
+license: Apache-2.0
+preferred-citation:
+  type: article
+  authors:
+  - given-names: Jonas
+    family-names: Belouadi
+    affiliation: Bielefeld University
+    email: jonas.belouadi@uni-bielefeld.de
+  - affiliation: Bielefeld University
+    email: steffen.eger@uni-bielefeld.de
+    given-names: Steffen
+    family-names: Eger
+  doi: "10.48550/ARXIV.2212.10474"
+  url: "https://arxiv.org/abs/2212.10474"
+  journal: "Arxiv"
+  title: "ByGPT5: End-to-End Style-conditioned Poetry Generation with Token-free Language Models"
+  year: 2022
