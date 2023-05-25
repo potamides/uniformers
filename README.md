@@ -1,16 +1,18 @@
-# Uniformers
+# Uniformers: ByGPT5 & Friends
 [![arXiv](https://img.shields.io/badge/arXiv-2212.10474-B31B1B)](https://arxiv.org/abs/2212.10474)
-[![Semantic Scholar](https://img.shields.io/badge/Scholar-254877406-0f3875)](https://www.semanticscholar.org/paper/ByGPT5%3A-End-to-End-Style-conditioned-Poetry-with-Belouadi-Eger/11ddb0953eae196dab339bfdc117221594cf945e)
+[![Semantic Scholar](https://img.shields.io/badge/Semantic_Scholar-254877406-0f3875)](https://www.semanticscholar.org/paper/ByGPT5%3A-End-to-End-Style-conditioned-Poetry-with-Belouadi-Eger/11ddb0953eae196dab339bfdc117221594cf945e)
+[![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1Ast-seDV6_pSzCvpGapNfTV_qDe0KRdF)
 
-[Uniformers](https://github.com/potamides/uniformers) (**Uni**versal Coded
-Character Set Trans**formers**) is a library for token-free language
-modeling. In particular, it contains the reference implementation of ByGPT5,
-a decoder-only transformer for character-level language modeling. ByGPT5 excels
-at character-level tasks such as style-conditioned poetry generation. Read the
-[paper](https://arxiv.org/abs/2212.10474) for more information. An interactive
-demo for poetry generation is
-[available](https://colab.research.google.com/drive/1Ast-seDV6_pSzCvpGapNfTV_qDe0KRdF).
-If you make use of this library in your work please [cite](CITATION.cff) it.
+[Uniformers](https://github.com/potamides/uniformers) (short for _**Uni**versal
+Coded Character Set Trans**formers**_) is a library for token-free language
+modeling. In particular, it contains the reference implementation of _**ByGPT5:
+End-to-End Style-conditioned Poetry Generation with Token-free Language
+Models**_. ByGPT5 is a token-free decoder-only transformer that excels at
+character-level tasks such as style-conditioned poetry generation. 
+
+* :page_with_curl: Read our [paper](https://arxiv.org/abs/2212.10474) on ByGPT5 for details.
+* :feather: An interactive demo for poetry generation is [available](https://colab.research.google.com/drive/1Ast-seDV6_pSzCvpGapNfTV_qDe0KRdF).
+* :bulb: If you make use of this library in your work please [cite](CITATION.cff) it.
 
 ## Installation
 If you want to use this project as a library you can install it as a regular
