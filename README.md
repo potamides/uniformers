@@ -10,7 +10,7 @@ End-to-End Style-conditioned Poetry Generation with Token-free Language
 Models**_. ByGPT5 is a token-free decoder-only transformer that excels at
 character-level tasks such as style-conditioned poetry generation. 
 
-* :page_with_curl: Read our [paper](https://arxiv.org/abs/2212.10474) on ByGPT5 for details.
+* :scroll: Read our [paper](https://arxiv.org/abs/2212.10474) on ByGPT5 for details.
 * :feather: An interactive demo for poetry generation is [available](https://colab.research.google.com/drive/1Ast-seDV6_pSzCvpGapNfTV_qDe0KRdF).
 * :bulb: If you make use of this library in your work please [cite](CITATION.cff) it.
 
