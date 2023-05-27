@@ -1,4 +1,5 @@
-# Uniformers: ByGPT5 & Friends
+# Uniformers<br><sub><sup>Token-free Language Modeling with ByGPT5 & Friends</sup></sub>
+
 [![arXiv](https://img.shields.io/badge/arXiv-2212.10474-B31B1B)](https://arxiv.org/abs/2212.10474)
 [![Semantic Scholar](https://img.shields.io/badge/Semantic_Scholar-254877406-0f3875)](https://www.semanticscholar.org/paper/ByGPT5%3A-End-to-End-Style-conditioned-Poetry-with-Belouadi-Eger/11ddb0953eae196dab339bfdc117221594cf945e)
 [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1Ast-seDV6_pSzCvpGapNfTV_qDe0KRdF)
