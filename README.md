@@ -108,11 +108,11 @@ models on the [Hugging Face Model Hub](https://huggingface.co/nllg):
 | Medium | 289.1M     | [English](https://huggingface.co/nllg/bygpt5-medium-en), [German](https://huggingface.co/nllg/bygpt5-medium-de) | [English](https://huggingface.co/nllg/poetry-bygpt5-medium-en), [German](https://huggingface.co/nllg/poetry-bygpt5-medium-de) |
 
 ## Released Datasets
-By default, this library creates QuaTrain on-the-fly, when needed (which can
+By default, this library creates QuaTrain on-the-fly when needed (which can
 take some time). A preprocessed version (both in English and German) can be
 found under [releases](https://github.com/potamides/uniformers/releases/latest).
 
 | Dataset  | Language | #Quatrains |
 |:---------|:---------|:-----------|
-| QuaTrain | [English](https://github.com/potamides/uniformers/releases/latest/download/QuaTrain-de.json) | 2.7M |
+| QuaTrain | [English](https://github.com/potamides/uniformers/releases/latest/download/QuaTrain-en.json) | 2.7M |
 | QuaTrain | [German](https://github.com/potamides/uniformers/releases/latest/download/QuaTrain-de.json)  | 5.9M |
