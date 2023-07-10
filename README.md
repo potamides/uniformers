@@ -1,7 +1,8 @@
 # Uniformers<br><sub><sup>Token-free Language Modeling with ByGPT5 & Friends</sup></sub>
 
-[![arXiv](https://img.shields.io/badge/arXiv-2212.10474-B31B1B)](https://arxiv.org/abs/2212.10474)
-[![Semantic Scholar](https://img.shields.io/badge/Semantic_Scholar-254877406-0f3875)](https://www.semanticscholar.org/paper/ByGPT5%3A-End-to-End-Style-conditioned-Poetry-with-Belouadi-Eger/11ddb0953eae196dab339bfdc117221594cf945e)
+[![ACL Anthology](https://img.shields.io/badge/View%20on%20ACL%20Anthology-B31B1B?labelColor=gray&color=f8f9fa&logo=data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjwhLS0gQ3JlYXRlZCB3aXRoIElua3NjYXBlIChodHRwOi8vd3d3Lmlua3NjYXBlLm9yZy8pIC0tPgo8c3ZnCiAgIHhtbG5zOnN2Zz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciCiAgIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIKICAgdmVyc2lvbj0iMS4wIgogICB3aWR0aD0iNjgiCiAgIGhlaWdodD0iNDYiCiAgIGlkPSJzdmcyIj4KICA8ZGVmcwogICAgIGlkPSJkZWZzNCIgLz4KICA8cGF0aAogICAgIGQ9Ik0gNDEuOTc3NTUzLC0yLjg0MjE3MDllLTAxNCBDIDQxLjk3NzU1MywxLjc2MTc4IDQxLjk3NzU1MywxLjQ0MjExIDQxLjk3NzU1MywzLjAxNTggTCA3LjQ4NjkwNTQsMy4wMTU4IEwgMCwzLjAxNTggTCAwLDEwLjUwMDc5IEwgMCwzOC40Nzg2NyBMIDAsNDYgTCA3LjQ4NjkwNTQsNDYgTCA0OS41MDA4MDIsNDYgTCA1Ni45ODc3MDgsNDYgTCA2OCw0NiBMIDY4LDMwLjk5MzY4IEwgNTYuOTg3NzA4LDMwLjk5MzY4IEwgNTYuOTg3NzA4LDEwLjUwMDc5IEwgNTYuOTg3NzA4LDMuMDE1OCBDIDU2Ljk4NzcwOCwxLjQ0MjExIDU2Ljk4NzcwOCwxLjc2MTc4IDU2Ljk4NzcwOCwtMi44NDIxNzA5ZS0wMTQgTCA0MS45Nzc1NTMsLTIuODQyMTcwOWUtMDE0IHogTSAxNS4wMTAxNTUsMTcuOTg1NzggTCA0MS45Nzc1NTMsMTcuOTg1NzggTCA0MS45Nzc1NTMsMzAuOTkzNjggTCAxNS4wMTAxNTUsMzAuOTkzNjggTCAxNS4wMTAxNTUsMTcuOTg1NzggeiAiCiAgICAgc3R5bGU9ImZpbGw6I2VkMWMyNDtmaWxsLW9wYWNpdHk6MTtmaWxsLXJ1bGU6ZXZlbm9kZDtzdHJva2U6bm9uZTtzdHJva2Utd2lkdGg6MTIuODk1NDExNDk7c3Ryb2tlLWxpbmVjYXA6YnV0dDtzdHJva2UtbGluZWpvaW46bWl0ZXI7c3Ryb2tlLW1pdGVybGltaXQ6NDtzdHJva2UtZGFzaGFycmF5Om5vbmU7c3Ryb2tlLWRhc2hvZmZzZXQ6MDtzdHJva2Utb3BhY2l0eToxIgogICAgIGlkPSJyZWN0MjE3OCIgLz4KPC9zdmc+Cg==)](https://aclanthology.org/2023.acl-long.406)
+[![arXiv]( https://img.shields.io/badge/View%20on%20arXiv-B31B1B?logo=arxiv&labelColor=gray)](https://arxiv.org/abs/2212.10474)
+[![Semantic Scholar](https://img.shields.io/badge/View%20on%20Semantic%20Scholar-0f3875?logo=semanticscholar&labelColor=gray&logoColor=f4d35e)](https://www.semanticscholar.org/paper/ByGPT5%3A-End-to-End-Style-conditioned-Poetry-with-Belouadi-Eger/11ddb0953eae196dab339bfdc117221594cf945e)
 [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1Ast-seDV6_pSzCvpGapNfTV_qDe0KRdF)
 
 [Uniformers](https://github.com/potamides/uniformers) (short for _**Uni**versal
@@ -13,7 +14,7 @@ character-level tasks such as style-conditioned poetry generation.
 
 * :scroll: Read our [paper](https://arxiv.org/abs/2212.10474) on ByGPT5 for details.
 * :feather: An interactive demo for poetry generation is [available](https://colab.research.google.com/drive/1Ast-seDV6_pSzCvpGapNfTV_qDe0KRdF).
-* :bulb: If you make use of this library in your work please [cite](CITATION.cff) it.
+* :bulb: If you make use of this library in your work please [cite](https://aclanthology.org/2023.acl-long.406.bib) it.
 
 ## Installation
 If you want to use this project as a library you can install it as a regular
