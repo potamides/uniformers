@@ -20,15 +20,15 @@ license = {text = "Apache-2.0 License"}
 dependencies = [
   "datasets~=2.3",
   "numpy~=1.22",
-  "tokenizers~=0.12",
   "torch>=1.11",
   "zstandard~=0.17",
-  "transformers==4.20.0",
   "lxml~=4.9",
   "sacremoses~=0.0.53",
   "optuna~=2.10",
   "libarchive-c~=4.0",
   "scikit-learn~=1.1",
+  "tokenizers==0.15",
+  "transformers>=4.20.0",
   # quickfix, official pypi package doesn't work yet for python > 3.7
   "ipapy @ https://github.com/ionite34/ipapy/archive/4fedf540a68b998ddd982c05f113d40aa4f3f97f.zip"
 ]
