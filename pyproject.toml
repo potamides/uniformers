@@ -28,7 +28,7 @@ dependencies = [
   "libarchive-c~=4.0",
   "scikit-learn~=1.1",
   "tokenizers==0.15",
-  "uniformers>=4.20.0",
+  "transformers>=4.20.0",
   # quickfix, official pypi package doesn't work yet for python > 3.7
   "ipapy @ https://github.com/ionite34/ipapy/archive/4fedf540a68b998ddd982c05f113d40aa4f3f97f.zip"
 ]
