@@ -22,7 +22,6 @@ dependencies = [
   "numpy~=1.22",
   "torch>=1.11",
   "zstandard~=0.17",
-  "transformers==4.20.0",
   "lxml~=4.9",
   "sacremoses~=0.0.53",
   "optuna~=2.10",
