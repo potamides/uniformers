@@ -19,7 +19,6 @@ keywords = [
 license = {text = "Apache-2.0 License"}
 dependencies = [
   "datasets~=2.3",
-  "numpy~=1.22",
   "torch>=1.11",
   "zstandard~=0.17",
   "lxml~=4.9",
