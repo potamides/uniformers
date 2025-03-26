@@ -19,11 +19,11 @@ keywords = [
 license = {text = "Apache-2.0 License"}
 dependencies = [
   "datasets~=2.3",
-  "numpy~=1.22",
-  "tokenizers~=0.12",
+  "numpy~=1.26.3",
+  "tokenizers~=0.19.0",
   "torch>=1.11",
   "zstandard~=0.17",
-  "transformers==4.20.0",
+  "transformers==4.43.3",
   "lxml~=4.9",
   "sacremoses~=0.0.53",
   "optuna~=2.10",
